@@ -187,7 +187,7 @@ export default function Register() {
                     }))
                   }
                   placeholder="Min. 6 characters"
-                  className={`input-field pl-11 pr-11 ${
+                  className={`input-field pl-11 pr-11 [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden ${
                     errors.password ? "border-red-400/50" : ""
                   }`}
                 />
@@ -231,7 +231,7 @@ export default function Register() {
                     }))
                   }
                   placeholder="Repeat password"
-                  className={`input-field pl-11 ${
+                  className={`input-field pl-11 [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden ${
                     errors.confirm ? "border-red-400/50" : ""
                   }`}
                 />

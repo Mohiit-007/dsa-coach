@@ -108,7 +108,9 @@ export default function Login() {
                     }
                   }}
                   placeholder="••••••••"
-                  className={`input-field pl-11 pr-11 ${errors.password ? "border-red-400/50 focus:border-red-400/50 focus:ring-red-400/20" : ""}`}
+                  className={`input-field pl-11 [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden ${
+                    errors.confirm ? "border-red-400/50" : ""
+                  }`}
                 />
                 <button type="button" onClick={() => setShow(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
                   {show ? <EyeOff size={15} /> : <Eye size={15} />}
