@@ -19,13 +19,25 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [stats, setStats] = useState(null);
+  const [historyStats, setHistoryStats] = useState(null);
   const { theme } = useTheme();
   const isLight = theme === "light";
 
   useEffect(() => {
-    api.get("/analysis/stats/overview")
-      .then(res => setStats(res.data.data))
-      .catch(() => {});
+    const fetchStats = async () => {
+      try {
+        const [analysisRes, historyRes] = await Promise.all([
+          api.get("/analysis/stats/overview"),
+          api.get("/history/stats"),
+        ]);
+        setStats(analysisRes.data.data);
+        setHistoryStats(historyRes.data.data);
+      } catch {
+        // Non-blocking: profile page should still load even if stats fail
+      }
+    };
+
+    fetchStats();
   }, []);
 
   const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
@@ -44,10 +56,21 @@ export default function Profile() {
     }
   };
 
-  const dsaSolved = stats?.dsaSolved ?? user?.problemsSolved ?? 0;
+  // Prefer live user.problemsSolved so it updates instantly when problems are marked solved
+  const dsaSolved = user?.problemsSolved ?? stats?.dsaSolved ?? 0;
+
+  // Prefer unified History stats for total analyses so it matches the History page.
+  const totalAnalysesFromHistory =
+    historyStats?.toolStats?.find((t) => t._id === "analyze")?.count ?? null;
+
+  const totalAnalyses =
+    user?.totalAnalyses ??
+    totalAnalysesFromHistory ??
+    stats?.total ??
+    0;
 
   const STATS = [
-    { label: "Total Analyses",      value: user?.totalAnalyses || 0, icon: Code2,  color: "text-cyan-400",   bg: "bg-cyan-400/10"   },
+    { label: "Total Analyses",      value: totalAnalyses,             icon: Code2,  color: "text-cyan-400",   bg: "bg-cyan-400/10"   },
     { label: "DSA Problems Solved", value: dsaSolved,                  icon: Trophy, color: "text-amber-400", bg: "bg-amber-400/10"  },
     { label: "DSA Streak (days)",   value: user?.streak || 0,          icon: Zap,    color: "text-green-400", bg: "bg-green-400/10"  },
     { label: "Member Since",        value: new Date(user?.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", year: "numeric" }), icon: Calendar, color: "text-blue-400", bg: "bg-blue-400/10" },

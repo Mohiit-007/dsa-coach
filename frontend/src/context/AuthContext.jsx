@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [analysisStats, setAnalysisStats] = useState(null);
 
   // Verify token on mount
   useEffect(() => {
@@ -72,8 +73,33 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(updatedUser));
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const res = await api.get("/auth/me");
+    updateUser(res.data.user);
+    return res.data.user;
+  }, [updateUser]);
+
+  const refreshAnalysisStats = useCallback(async () => {
+    const res = await api.get("/analysis/stats/overview");
+    setAnalysisStats(res.data.data);
+    return res.data.data;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, initialized, register, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        initialized,
+        register,
+        login,
+        logout,
+        updateUser,
+        refreshUser,
+        analysisStats,
+        refreshAnalysisStats,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

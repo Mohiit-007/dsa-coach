@@ -108,7 +108,7 @@ function LangPicker({ value, onChange }) {
 }
 
 export default function CodeDebugger() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser, refreshAnalysisStats } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -208,13 +208,14 @@ export default function CodeDebugger() {
   // Listen for code sync events from other editors
   useEffect(() => {
     const handleSync = (event) => {
-      const { code, title, source } = event.detail || {};
+      const { code, title, description, source } = event.detail || {};
       if (source !== 'debugger') {
         if (typeof code === "string") setCode(code);
         setForm(f => ({
           ...f,
           ...(typeof code === "string" ? { code } : {}),
           ...(typeof title === "string" ? { title } : {}),
+          ...(typeof description === "string" ? { description } : {}),
         }));
       }
     };
@@ -236,6 +237,13 @@ export default function CodeDebugger() {
     const savedTitle = localStorage.getItem('code-tools-title');
     if (savedTitle && !form.title) {
       setForm(f => ({ ...f, title: savedTitle }));
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedDescription = localStorage.getItem('code-tools-description');
+    if (savedDescription && !form.description) {
+      setForm(f => ({ ...f, description: savedDescription }));
     }
   }, []);
 
@@ -330,6 +338,14 @@ export default function CodeDebugger() {
           dailyUsage: (user.dailyUsage || 0) + 1,
           dailyDebugUsage: (user.dailyDebugUsage || 0) + 1,
         });
+      }
+
+      // Pull latest user aggregates for real-time dashboard/profile updates
+      try {
+        await refreshUser?.();
+        await refreshAnalysisStats?.();
+      } catch {
+        // non-blocking
       }
       
       // Save to unified history

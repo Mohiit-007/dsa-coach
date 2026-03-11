@@ -33,7 +33,7 @@ const CustomBarTooltip = ({ active, payload }) => {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, analysisStats, refreshAnalysisStats } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [potd, setPotd] = useState(null);
@@ -41,12 +41,28 @@ export default function Dashboard() {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
+  // Initial load + subscribe to shared analysisStats in AuthContext
   useEffect(() => {
-    api.get("/analysis/stats/overview")
-      .then(res => setStats(res.data.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (!analysisStats) {
+          const fresh = await refreshAnalysisStats();
+          if (!cancelled) setStats(fresh);
+        } else {
+          setStats(analysisStats);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [analysisStats, refreshAnalysisStats]);
 
   useEffect(() => {
     api.get("/dsa/potd")
@@ -80,10 +96,12 @@ export default function Dashboard() {
   const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const STAT_CARDS = [
-    { label: "Total Analyses", value: stats?.total ?? 0, icon: Code2, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/20" },
+    // Prefer live user.totalAnalyses so it updates immediately after running Analyze
+    { label: "Total Analyses", value: user?.totalAnalyses ?? stats?.total ?? 0, icon: Code2, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/20" },
     { label: "Optimal Solutions", value: stats?.optimal ?? 0, icon: Target, color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20" },
     { label: "Accuracy Rate", value: `${stats?.accuracy ?? 0}%`, icon: TrendingUp, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
-    { label: "DSA Problems Solved", value: stats?.dsaSolved ?? 0, icon: Trophy, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20" },
+    // Prefer live user.problemsSolved so it updates immediately when practice status changes
+    { label: "DSA Problems Solved", value: user?.problemsSolved ?? stats?.dsaSolved ?? 0, icon: Trophy, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20" },
   ];
 
   return (

@@ -4,6 +4,7 @@ import api from "../api/axios";
 import toast from "react-hot-toast";
 import { Code2, ChevronDown, ExternalLink } from "lucide-react";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useAuth } from "../context/AuthContext";
 
 const TOPIC_ICONS = {
   Arrays: "[]",
@@ -225,6 +226,7 @@ function RingProgress({ solved, total, light }) {
 export default function PracticeList() {
   const nav = useNavigate();
   const { theme } = useTheme();
+  const { updateUser } = useAuth();
   const isLight = theme === "light";
   const [loading, setLoading] = useState(true);
   const [all, setAll] = useState([]);
@@ -282,6 +284,14 @@ export default function PracticeList() {
       setAll((prev) =>
         prev.map((p) => (p._id === id ? { ...p, status: { solved: !!next.solved, revision: !!next.revision } } : p))
       );
+
+      // Refresh user stats (problemsSolved, streak) so dashboard/profile update in real time
+      try {
+        const me = await api.get("/auth/me");
+        updateUser(me.data.user);
+      } catch {
+        // Non-blocking; local UI already updated
+      }
     } catch (e) {
       toast.error(e.response?.data?.message || "Failed to update");
     } finally {

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import { ChevronLeft, ExternalLink, Search } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const TOPIC_SLUG_TO_NAME = {
   arrays: "Arrays",
@@ -28,6 +29,7 @@ const DIFF_COLOR = {
 export default function TopicProblems() {
   const { topicSlug } = useParams();
   const nav = useNavigate();
+  const { updateUser } = useAuth();
 
   const topic = TOPIC_SLUG_TO_NAME[topicSlug] || "Arrays";
   const [loading, setLoading] = useState(true);
@@ -68,6 +70,14 @@ export default function TopicProblems() {
       setItems((prev) =>
         prev.map((p) => (p._id === id ? { ...p, status: { solved: !!next.solved, revision: !!next.revision } } : p))
       );
+
+      // Refresh user stats (problemsSolved, streak) so dashboard/profile update in real time
+      try {
+        const me = await api.get("/auth/me");
+        updateUser(me.data.user);
+      } catch {
+        // Ignore; local list already reflects latest status
+      }
     } catch (e) {
       toast.error(e.response?.data?.message || "Failed to update");
     } finally {

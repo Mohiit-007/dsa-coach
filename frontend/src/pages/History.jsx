@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Bookmark, Trash2, ArrowRight, CheckCircle, XCircle, ChevronLeft, ChevronRight, Code2, BookOpen, Bug, ChevronDown, Check } from "lucide-react";
 import { getHistory, deleteHistoryEntry, toggleBookmark } from "../services/historyService";
 import toast from "react-hot-toast";
+import { useTheme } from "../context/ThemeContext.jsx";
 
 const LANGUAGES = ["All", "C++", "Python", "Java", "JavaScript", "TypeScript", "Go", "Rust", "C#"];
 const LANG_ICONS = { "C++": "⚙️", Python: "🐍", Java: "☕", JavaScript: "🌐", TypeScript: "🔷", Go: "🔵", Rust: "🦀", "C#": "🟣" };
@@ -15,7 +16,7 @@ const TOOL_TYPES = [
   { value: "debug", label: "Debug", icon: Bug },
 ];
 
-function LanguageDropdown({ value, onChange }) {
+function LanguageDropdown({ value, onChange, theme }) {
   const [open, setOpen] = useState(false);
   const selectedLabel = value || "All";
   const selectedIcon = LANG_ICONS[selectedLabel] || "🌐";
@@ -25,16 +26,31 @@ function LanguageDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-between w-full gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm shadow-sm hover:border-slate-300 hover:bg-slate-50 transition-all"
+        className={`flex items-center justify-between w-full gap-2 px-3 py-2.5 rounded-xl border text-sm shadow-sm transition-all
+          ${theme === "light"
+            ? "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-800"
+            : "border-white/10 bg-dark-800/80 hover:border-white/20 hover:bg-dark-700 text-gray-100"}`}
       >
         <span className="flex items-center gap-2">
           <span className="text-base">{selectedIcon}</span>
-          <span className="font-medium text-slate-800">{selectedLabel}</span>
+          <span
+            className={`font-medium ${
+              theme === "light" ? "text-slate-800" : "text-white"
+            }`}
+          >
+            {selectedLabel}
+          </span>
         </span>
-        <ChevronDown size={14} className="text-slate-500" />
+        <ChevronDown size={14} className={theme === "light" ? "text-slate-500" : "text-gray-400"} />
       </button>
       {open && (
-        <div className="absolute z-50 mt-2 w-44 rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+        <div
+          className={`absolute z-50 mt-2 w-44 rounded-xl border shadow-2xl overflow-hidden ${
+            theme === "light"
+              ? "border-slate-200 bg-white"
+              : "border-white/10 bg-dark-800"
+          }`}
+        >
           <div className="py-1.5">
             {LANGUAGES.map((lang) => {
               const active = value === lang;
@@ -48,8 +64,12 @@ function LanguageDropdown({ value, onChange }) {
                   }}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                     active
-                      ? "bg-slate-100 text-slate-900 font-semibold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? theme === "light"
+                        ? "bg-slate-100 text-slate-900 font-semibold"
+                        : "bg-white/10 text-white font-semibold"
+                      : theme === "light"
+                        ? "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        : "text-gray-300 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   <span>{LANG_ICONS[lang] || "🌐"}</span>
@@ -66,6 +86,8 @@ function LanguageDropdown({ value, onChange }) {
 }
 
 export default function History() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -73,6 +95,7 @@ export default function History() {
   const [pages, setPages] = useState(1);
   const [filters, setFilters] = useState({ toolType: "all", language: "All", search: "" });
   const [deleting, setDeleting] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const fetchHistory = useCallback(async () => {
     console.log(`[HISTORY-PAGE] === Fetching History Page ===`);
@@ -126,10 +149,7 @@ export default function History() {
     }
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this history entry?")) return;
-    
+  const performDelete = async (id) => {
     setDeleting(id);
     try {
       await deleteHistoryEntry(id);
@@ -140,6 +160,7 @@ export default function History() {
       toast.error("Failed to delete history entry");
     } finally {
       setDeleting(null);
+      setConfirmId(null);
     }
   };
 
@@ -184,17 +205,33 @@ export default function History() {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto animate-fade-up">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">History</h1>
-        <p className="text-gray-500 font-mono text-sm">Your Code Tools activity history</p>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+          History
+        </h1>
+        <p className={theme === "light" ? "text-slate-600 font-mono text-sm" : "text-gray-500 font-mono text-sm"}>
+          Your Code Tools activity history
+        </p>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div
+        className={`mb-6 rounded-3xl shadow-sm border ${
+          theme === "light"
+            ? "border-slate-200 bg-white"
+            : "border-white/10 bg-dark-900/60"
+        }`}
+      >
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Tool Type Filter */}
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-500 font-mono tracking-wider uppercase mb-2">Tool Type</label>
+              <label
+                className={`block text-xs font-semibold font-mono tracking-wider uppercase mb-2 ${
+                  theme === "light" ? "text-slate-500" : "text-gray-400"
+                }`}
+              >
+                Tool Type
+              </label>
               <div className="flex gap-2 flex-wrap">
                 {TOOL_TYPES.map((tool) => {
                   const Icon = tool.icon;
@@ -206,8 +243,12 @@ export default function History() {
                       onClick={() => setFilters(prev => ({ ...prev, toolType: tool.value }))}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono border transition-all ${
                         active
-                          ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                          ? theme === "light"
+                            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                            : "bg-cyan-500/20 text-cyan-200 border-cyan-400/60 shadow-sm"
+                          : theme === "light"
+                            ? "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                            : "bg-dark-800/80 text-gray-300 border-white/10 hover:bg-dark-700 hover:text-white"
                       }`}
                     >
                       <Icon size={14} />
@@ -220,25 +261,47 @@ export default function History() {
 
             {/* Language Filter */}
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-500 font-mono tracking-wider uppercase mb-2">Language</label>
+              <label
+                className={`block text-xs font-semibold font-mono tracking-wider uppercase mb-2 ${
+                  theme === "light" ? "text-slate-500" : "text-gray-400"
+                }`}
+              >
+                Language
+              </label>
               <LanguageDropdown
                 value={filters.language}
                 onChange={(lang) => setFilters(prev => ({ ...prev, language: lang }))}
+                theme={theme}
               />
             </div>
           </div>
 
           {/* Search */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 font-mono tracking-wider uppercase mb-2">Search</label>
+            <label
+              className={`block text-xs font-semibold font-mono tracking-wider uppercase mb-2 ${
+                theme === "light" ? "text-slate-500" : "text-gray-400"
+              }`}
+            >
+              Search
+            </label>
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search
+                size={16}
+                className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                  theme === "light" ? "text-slate-400" : "text-gray-500"
+                }`}
+              />
               <input
                 type="text"
                 placeholder="Search code, title, or description..."
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400"
+                className={`w-full rounded-xl pl-10 pr-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 border ${
+                  theme === "light"
+                    ? "border-slate-200 bg-white text-slate-800 placeholder:text-slate-400"
+                    : "border-white/10 bg-dark-800/80 text-gray-100 placeholder:text-gray-500"
+                }`}
               />
             </div>
           </div>
@@ -249,15 +312,22 @@ export default function History() {
       {loading ? (
         <div className="card p-8 text-center">
           <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading history...</p>
+          <p className={theme === "light" ? "text-slate-500" : "text-gray-400"}>Loading history...</p>
         </div>
       ) : history.length === 0 ? (
         <div className="card p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-4">
-            <Search size={24} className="text-gray-600" />
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              theme === "light" ? "bg-slate-100" : "bg-gray-800"
+            }`}
+          >
+            <Search
+              size={24}
+              className={theme === "light" ? "text-slate-500" : "text-gray-600"}
+            />
           </div>
           <h3 className="text-lg font-semibold mb-2">No history found</h3>
-          <p className="text-gray-400 text-sm">
+          <p className={theme === "light" ? "text-slate-500 text-sm" : "text-gray-400 text-sm"}>
             {filters.search || filters.toolType !== "all" || filters.language !== "All"
               ? "Try adjusting your filters"
               : "Start using the Code Tools to see your history here"}
@@ -280,12 +350,28 @@ export default function History() {
                           <span className={`text-xs font-mono font-semibold uppercase ${getToolColor(item.toolType)}`}>
                             {item.toolType}
                           </span>
-                          <span className="text-xs text-gray-500">{LANG_ICONS[item.language]} {item.language}</span>
+                          <span
+                            className={`text-xs ${
+                              theme === "light" ? "text-slate-500" : "text-gray-500"
+                            }`}
+                          >
+                            {LANG_ICONS[item.language]} {item.language}
+                          </span>
                         </div>
-                        <h3 className="font-semibold text-white mb-1">
+                        <h3
+                          className={`font-semibold mb-1 ${
+                            theme === "light" ? "text-slate-900" : "text-white"
+                          }`}
+                        >
                           {item.problemTitle || `${item.toolType.charAt(0).toUpperCase() + item.toolType.slice(1)} Session`}
                         </h3>
-                        <p className="text-xs text-gray-400">{formatDate(item.createdAt)}</p>
+                        <p
+                          className={`text-xs ${
+                            theme === "light" ? "text-slate-500" : "text-gray-400"
+                          }`}
+                        >
+                          {formatDate(item.createdAt)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -294,16 +380,25 @@ export default function History() {
                         className={`p-2 rounded-lg transition-all ${
                           item.isBookmarked
                             ? "text-yellow-400 hover:text-yellow-300"
-                            : "text-gray-500 hover:text-yellow-400"
+                            : theme === "light"
+                              ? "text-slate-500 hover:text-yellow-500"
+                              : "text-gray-500 hover:text-yellow-400"
                         }`}
                         title={item.isBookmarked ? "Remove bookmark" : "Add bookmark"}
                       >
                         <Bookmark size={14} fill={item.isBookmarked ? "currentColor" : "none"} />
                       </button>
                       <button
-                        onClick={(e) => handleDelete(item._id, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmId(item._id);
+                        }}
                         disabled={deleting === item._id}
-                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 transition-all"
+                        className={`p-2 rounded-lg transition-all ${
+                          theme === "light"
+                            ? "text-slate-500 hover:text-red-500"
+                            : "text-gray-500 hover:text-red-400"
+                        }`}
                         title="Delete"
                       >
                         {deleting === item._id ? (
@@ -317,8 +412,18 @@ export default function History() {
 
                   {/* Code Preview */}
                   <div className="mb-3">
-                    <div className="bg-dark-800/50 rounded-lg p-3 border border-white/5">
-                      <pre className="text-xs font-mono text-gray-300 overflow-x-auto">
+                    <div
+                      className={`rounded-lg p-3 border ${
+                        theme === "light"
+                          ? "bg-slate-50 border-slate-200"
+                          : "bg-dark-800/50 border-white/5"
+                      }`}
+                    >
+                      <pre
+                        className={`text-xs font-mono overflow-x-auto ${
+                          theme === "light" ? "text-slate-800" : "text-gray-300"
+                        }`}
+                      >
                         {truncateCode(item.codeInput)}
                       </pre>
                     </div>
@@ -346,7 +451,11 @@ export default function History() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="p-2 rounded-lg glass border border-white/10 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className={`p-2 rounded-lg glass border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              theme === "light"
+                ? "border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                : "border-white/10 text-gray-400 hover:text-white"
+            }`}
           >
             <ChevronLeft size={16} />
           </button>
@@ -371,7 +480,9 @@ export default function History() {
                   className={`w-8 h-8 rounded-lg text-xs font-mono transition-all ${
                     page === pageNum
                       ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black"
-                      : "glass border border-white/10 text-gray-400 hover:text-white"
+                      : theme === "light"
+                        ? "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                        : "glass border border-white/10 text-gray-400 hover:text-white"
                   }`}
                 >
                   {pageNum}
@@ -383,7 +494,11 @@ export default function History() {
           <button
             onClick={() => setPage(p => Math.min(pages, p + 1))}
             disabled={page === pages}
-            className="p-2 rounded-lg glass border border-white/10 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className={`p-2 rounded-lg glass border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              theme === "light"
+                ? "border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                : "border-white/10 text-gray-400 hover:text-white"
+            }`}
           >
             <ChevronRight size={16} />
           </button>
@@ -392,10 +507,50 @@ export default function History() {
 
       {/* Results Count */}
       <div className="text-center mt-6">
-        <p className="text-xs text-gray-500 font-mono">
+        <p
+          className={`text-xs font-mono ${
+            theme === "light" ? "text-slate-500" : "text-gray-500"
+          }`}
+        >
           Showing {history.length} of {total} results
         </p>
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmId && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-sm rounded-2xl p-5 shadow-xl ${
+              isLight ? "bg-white border border-slate-200" : "bg-dark-800 border border-white/10"
+            }`}
+          >
+            <h2 className="text-base font-bold mb-2">Delete history entry?</h2>
+            <p
+              className={`text-xs sm:text-sm mb-4 font-mono ${
+                isLight ? "text-slate-600" : "text-gray-400"
+              }`}
+            >
+              This action cannot be undone. You&apos;ll permanently remove this Code Tools run from your history.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmId(null)}
+                disabled={deleting === confirmId}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-500/40 text-slate-200 hover:bg-white/5 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => performDelete(confirmId)}
+                disabled={deleting === confirmId}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-red-500/60 bg-red-500/10 text-red-300 hover:bg-red-500/20 disabled:opacity-60"
+              >
+                {deleting === confirmId ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

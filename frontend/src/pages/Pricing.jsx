@@ -87,19 +87,45 @@ export default function Pricing() {
 
       {/* Current plan banner */}
       {user && (
-        <div className={`mb-8 card p-4 flex items-center gap-3 border ${user.plan === "pro" ? "border-cyan-500/30 bg-cyan-500/5" : "border-white/10"}`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${user.plan === "pro" ? "bg-cyan-400/15" : "bg-white/[0.05]"}`}>
+        <div
+          className={`mb-8 card p-4 flex items-center gap-3 border ${
+            user.plan === "pro" ? "border-cyan-500/30 bg-cyan-500/5" : "border-white/10"
+          }`}
+        >
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
+              user.plan === "pro" ? "bg-cyan-400/15" : "bg-white/[0.05]"
+            }`}
+          >
             {user.plan === "pro" ? "⚡" : "🆓"}
           </div>
           <div>
-            <div className="font-bold text-sm">
+            <div
+              className={`font-bold text-sm ${
+                isLight ? "text-slate-900" : "text-gray-100"
+              }`}
+            >
               You're on the{" "}
-              <span className={user.plan === "pro" ? "text-cyan-500" : "text-slate-800"}>
+              <span
+                className={
+                  user.plan === "pro"
+                    ? isLight
+                      ? "text-cyan-600"
+                      : "text-cyan-400"
+                    : isLight
+                      ? "text-slate-800"
+                      : "text-gray-100"
+                }
+              >
                 {user.plan === "pro" ? "Pro" : "Free"}
               </span>{" "}
               plan
             </div>
-            <div className="text-xs text-gray-600 font-mono">
+            <div
+              className={`text-xs font-mono ${
+                isLight ? "text-gray-600" : "text-gray-400"
+              }`}
+            >
               {user.plan === "free"
                 ? `${Math.max(0, 30 - (user.dailyUsage || 0))} AI actions remaining today`
                 : "Unlimited analyses · All features unlocked"}
@@ -127,13 +153,35 @@ export default function Pricing() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="text-3xl">{plan.icon}</div>
                 <div>
-                  <div className="font-black text-xl">{plan.name}</div>
-                  <div className="text-xs text-gray-600 font-mono">Plan</div>
+                  <div
+                    className={`font-black text-xl ${
+                      isLight ? "text-slate-900" : "text-gray-50"
+                    }`}
+                  >
+                    {plan.name}
+                  </div>
+                  <div
+                    className={`text-xs font-mono ${
+                      isLight ? "text-gray-600" : "text-gray-400"
+                    }`}
+                  >
+                    Plan
+                  </div>
                 </div>
               </div>
               <div className="flex items-end gap-1">
-                <span className="text-5xl font-black">{plan.price}</span>
-                <span className="text-gray-500 mb-2 font-mono text-sm">
+                <span
+                  className={`text-5xl font-black ${
+                    isLight ? "text-slate-900" : "text-gray-50"
+                  }`}
+                >
+                  {plan.price}
+                </span>
+                <span
+                  className={`mb-2 font-mono text-sm ${
+                    isLight ? "text-gray-500" : "text-gray-400"
+                  }`}
+                >
                   {plan.period}
                 </span>
               </div>
@@ -145,7 +193,13 @@ export default function Pricing() {
                   <li
                     key={i}
                     className={`flex items-center gap-3 text-sm ${
-                      f.available ? "text-slate-800" : "text-gray-500"
+                      f.available
+                        ? isLight
+                          ? "text-slate-800"
+                          : "text-gray-100"
+                        : isLight
+                          ? "text-gray-500"
+                          : "text-gray-500"
                     }`}
                   >
                     <CheckCircle

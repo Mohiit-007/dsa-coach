@@ -193,7 +193,7 @@ function growthFn(kind) {
 }
 
 export default function Analyzer() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser, refreshAnalysisStats } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -257,6 +257,16 @@ export default function Analyzer() {
     window.dispatchEvent(new CustomEvent('code-tools-sync', { detail: { title: newTitle, source: 'analyzer' } }));
   };
 
+  const handleDescriptionChange = (newDescription) => {
+    setForm(f => ({ ...f, description: newDescription }));
+    localStorage.setItem('code-tools-description', newDescription);
+    window.dispatchEvent(
+      new CustomEvent('code-tools-sync', {
+        detail: { description: newDescription, source: 'analyzer' },
+      })
+    );
+  };
+
   // Sync code across all editors and persist to localStorage
   const handleCodeChange = (newCode) => {
     setForm(f => ({ ...f, code: newCode }));
@@ -269,12 +279,13 @@ export default function Analyzer() {
   // Listen for code sync events from other editors
   useEffect(() => {
     const handleSync = (event) => {
-      const { code, title, source } = event.detail || {};
+      const { code, title, description, source } = event.detail || {};
       if (source !== 'analyzer') {
         setForm(f => ({
           ...f,
           ...(typeof code === "string" ? { code } : {}),
           ...(typeof title === "string" ? { title } : {}),
+          ...(typeof description === "string" ? { description } : {}),
         }));
       }
     };
@@ -295,6 +306,13 @@ export default function Analyzer() {
     const savedTitle = localStorage.getItem('code-tools-title');
     if (savedTitle && !form.title) {
       setForm(f => ({ ...f, title: savedTitle }));
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedDescription = localStorage.getItem('code-tools-description');
+    if (savedDescription && !form.description) {
+      setForm(f => ({ ...f, description: savedDescription }));
     }
   }, []);
 
@@ -406,20 +424,13 @@ export default function Analyzer() {
           dailyAnalyzeUsage: (user.dailyAnalyzeUsage || 0) + 1,
         });
       }
-      
-      // Save to unified history
+
+      // Pull latest user aggregates (e.g., totalAnalyses) for real-time dashboard/profile updates
       try {
-        await saveToHistory(
-          "analyze",
-          form.code,
-          form.language,
-          historyEntry?.resultOutput,
-          form.title,
-          form.description
-        );
-      } catch (historyError) {
-        console.warn("Failed to save to history:", historyError);
-        // Don't show error to user, just log it
+        await refreshUser?.();
+        await refreshAnalysisStats?.();
+      } catch {
+        // non-blocking
       }
       
       toast.success("Analysis complete! 🎉");
@@ -528,7 +539,11 @@ export default function Analyzer() {
               {/* Description */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 font-mono tracking-wider uppercase mb-2">Problem Description</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the problem (optional but improves analysis quality)..." rows={2}
+                <textarea
+                  value={form.description}
+                  onChange={e => handleDescriptionChange(e.target.value)}
+                  placeholder="Describe the problem (optional but improves analysis quality)..."
+                  rows={2}
                   className="input-field resize-none leading-relaxed" />
               </div>
 

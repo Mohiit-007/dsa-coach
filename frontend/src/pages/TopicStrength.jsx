@@ -85,17 +85,28 @@ export default function TopicStrength() {
   }));
 
   const SUMMARY_CARDS = [
-    { label: "Strong Topics", value: strong?.length || 0, color: "text-green-400", bg: "bg-green-400/10", desc: strong?.slice(0, 2).join(", ") || "—" },
-    { label: "Weak Topics",   value: weak?.length || 0,   color: "text-red-400",   bg: "bg-red-400/10",   desc: weak?.slice(0, 2).join(", ") || "—" },
-    { label: "Topics Practiced", value: topics.length, color: "text-cyan-400", bg: "bg-cyan-400/10", desc: `${data.total} total problems` },
+    { label: "Strong Topics", value: strong?.length || 0, color: "text-green-400", bg: "bg-green-400/10",  desc: strong?.slice(0, 2).join(", ") || "—" },
+    { label: "Weak Topics",   value: weak?.length || 0,   color: "text-red-400",   bg: "bg-red-400/10",    desc: weak?.slice(0, 2).join(", ") || "—" },
+    {
+      label: "Patterns Practiced",
+      value: topics.length,
+      color: "text-cyan-400",
+      bg: "bg-cyan-400/10",
+      desc: `${data.total} code tool runs`,
+    },
   ];
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-up">
       <div className="flex items-start justify-between mb-6 sm:mb-7">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">Topic <span className="text-cyan-400">Strength</span></h1>
-          <p className="text-gray-500 font-mono text-xs sm:text-sm">Based on your {data.total} analyzed solutions</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">
+            Topic <span className="text-cyan-400">Strength</span>
+          </h1>
+          <p className="text-gray-500 font-mono text-xs sm:text-sm">
+            Based on your {data.total} Code Tools runs
+            <span className="hidden sm:inline"> (Analyze, Explain, Debug)</span>
+          </p>
         </div>
         <button onClick={load} className="btn-secondary flex items-center gap-2 text-sm">
           <RefreshCw size={14} /> <span className="hidden sm:inline">Refresh</span>
