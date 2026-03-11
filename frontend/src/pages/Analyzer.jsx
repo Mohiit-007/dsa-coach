@@ -530,15 +530,11 @@ export default function Analyzer() {
                     className="input-field" 
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 font-mono tracking-wider uppercase mb-2">Language</label>
-                  <LangPicker value={form.language} onChange={v => setForm(f => ({ ...f, language: v }))} />
-                </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-gray-400 font-mono tracking-wider uppercase mb-2">Problem Description</label>
+                <label className="block text-xs font-semibold text-gray-400 font-mono tracking-wider uppercase mb-2">Problem Description *</label>
                 <textarea
                   value={form.description}
                   onChange={e => handleDescriptionChange(e.target.value)}
