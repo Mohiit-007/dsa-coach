@@ -14,7 +14,7 @@ const getGroq = () => {
     console.log("[GROQ] Initializing Groq client...");
     console.log("[GROQ] API Key exists:", !!process.env.GROQ_API_KEY);
     console.log("[GROQ] API Key length:", process.env.GROQ_API_KEY?.length || 0);
-    
+
     if (!process.env.GROQ_API_KEY) {
       console.error("[GROQ] GROQ_API_KEY is missing in .env — get a free key at https://console.groq.com");
       throw new Error("GROQ_API_KEY is missing in .env — get a free key at https://console.groq.com");
@@ -40,27 +40,47 @@ const callGroq = async (system, user, maxTokens = 8000) => {
 };
 
 const parseAI = (raw) => {
-  let clean = String(raw || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  let clean = String(raw || "").trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
   const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("Invalid AI response format");
+  const end   = clean.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("No JSON object found in AI response");
   clean = clean.slice(start, end + 1);
 
-  try {
-    return JSON.parse(clean);
-  } catch {
-    // Attempt 1: escape control chars outside strings (common when model includes raw newlines)
-    let fixed = clean.replace(/("(?:[^"\\]|\\.)*")|([\r\n\t])/g, (m, str, ctrl) => {
+  // Attempt 1 – raw parse
+  try { return JSON.parse(clean); } catch {}
+
+  // Attempt 2 – escape stray control characters outside quoted strings
+  let fixed = clean.replace(
+    /("(?:[^"\\]|\\.)*")|([\x00-\x1f])/g,
+    (m, str, ctrl) => {
       if (str) return str;
-      return ctrl === "\n" ? "\\n" : ctrl === "\r" ? "\\r" : ctrl === "\t" ? "\\t" : " ";
-    });
-    try {
-      return JSON.parse(fixed);
-    } catch {
-      // Attempt 2: quote unquoted object keys (e.g. { foo: 1 } -> { "foo": 1 })
-      fixed = fixed.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
-      return JSON.parse(fixed);
+      const map = { "\n": "\\n", "\r": "\\r", "\t": "\\t" };
+      return map[ctrl] ?? " ";
     }
+  );
+  try { return JSON.parse(fixed); } catch {}
+
+  // Attempt 3 – quote bare keys
+  fixed = fixed.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
+  try { return JSON.parse(fixed); } catch {}
+
+  // Attempt 4 – remove trailing comma before ] or }
+  fixed = fixed.replace(/,(\s*[}\]])/g, "$1");
+  try { return JSON.parse(fixed); } catch {}
+
+  // Attempt 5 – truncated JSON: close any open arrays/objects
+  const stack = [];
+  for (const ch of fixed) {
+    if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
+    else if (ch === "}" || ch === "]") stack.pop();
+  }
+  const recovered = fixed + stack.reverse().join("");
+  try { return JSON.parse(recovered); } catch (e) {
+    throw new Error(`JSON recovery failed: ${e.message}`);
   }
 };
 
@@ -92,14 +112,14 @@ Return this exact JSON structure:
   "code_analysis": {
     "time_complexity": "O(?) for the USER'S current code",
     "space_complexity": "O(?) for the USER'S current code",
-    "explanation": "Beginner-friendly explanation of how the USER'S current code works, step by step. Start with 2-3 sentences of plain-English intuition about the approach, then describe the algorithm in numbered steps or short paragraphs. Explicitly mention why the time and space complexities have those Big-O values."
+    "explanation": "Beginner-friendly explanation of how the USER'S current code works, step by step."
   },
   "is_optimal": true,
-  "optimization_advice": "Beginner-friendly advice on how to improve the USER'S code if it is not optimal. Explain what to change in plain English. If already optimal, return an empty string.",
+  "optimization_advice": "Beginner-friendly advice on how to improve the USER'S code if it is not optimal. If already optimal, return an empty string.",
   "optimized_solution": {
     "time_complexity": "O(?) for the optimal approach",
     "space_complexity": "O(?) for the optimal approach",
-    "explanation": "Beginner-friendly explanation of the optimal approach. First explain the high-level idea in 2-3 simple sentences, then summarize how it works in steps. Clearly compare this optimal complexity with the USER'S current complexity so a beginner understands the improvement.",
+    "explanation": "Beginner-friendly explanation of the optimal approach.",
     "code": "full optimized code here with \\n for newlines, written in the same language as the user's code"
   },
   "hints": ["hint 1 - vague", "hint 2 - moderate", "hint 3 - specific"],
@@ -116,7 +136,6 @@ Return this exact JSON structure:
 }`;
 
 // @route   POST /api/analysis/analyze
-// Free plan: 10 analyses/day (separate from explain/debug limits)
 router.post("/analyze", protect, checkToolLimit("dailyAnalyzeUsage", "code analyses"), async (req, res) => {
   try {
     const { problemTitle, problemDescription, userCode, language } = req.body;
@@ -125,35 +144,50 @@ router.post("/analyze", protect, checkToolLimit("dailyAnalyzeUsage", "code analy
       return res.status(400).json({ success: false, message: "Problem title and code are required" });
     }
 
-    // Call Groq API (retry once if JSON is malformed)
     const prompt = buildPrompt(problemTitle, problemDescription, userCode, language);
-    let raw = await callGroq(
-      "You are a DSA expert. Respond ONLY with valid JSON. No markdown fences, no extra text.",
-      prompt,
-      6500
-    );
+    const SYSTEM = "You are a DSA expert. Respond ONLY with valid JSON. No markdown fences, no extra text.";
 
     let result;
-    try {
-      result = parseAI(raw);
-    } catch (e) {
-      raw = await callGroq(
-        'Return ONLY valid minified JSON (strict JSON). All keys must be in double quotes. No markdown. No commentary.',
-        prompt,
-        6500
-      );
+    let raw;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
+        if (attempt === 1) {
+          raw = await callGroq(SYSTEM, prompt, 8000);
+        } else if (attempt === 2) {
+          raw = await callGroq(
+            "Return ONLY valid minified JSON (strict JSON). All keys double-quoted. No markdown. No commentary.",
+            prompt,
+            8000
+          );
+        } else {
+          const shortPrompt = `Analyze this DSA problem and return ONLY valid minified JSON.
+TITLE: ${problemTitle}
+CODE (${language}):
+${userCode}
+
+Return this exact structure (minified, no whitespace):
+{"algorithm_pattern":"","difficulty":"","code_analysis":{"time_complexity":"","space_complexity":"","explanation":""},"is_optimal":true,"optimization_advice":"","optimized_solution":{"time_complexity":"","space_complexity":"","explanation":"","code":""},"hints":["","",""],"interview_followups":["","",""],"related_problems":[{"title":"","difficulty":"","topic":"","description":"","link":""}]}`;
+          raw = await callGroq(
+            "Return ONLY valid minified JSON. Fill in all fields. No markdown.",
+            shortPrompt,
+            8000
+          );
+        }
         result = parseAI(raw);
-      } catch (e2) {
-        console.error("[ANALYZE] AI returned malformed JSON after retry:", e2?.message);
-        return res.status(502).json({
-          success: false,
-          message: "Analysis failed due to malformed AI response. Please try again.",
-        });
+        break;
+      } catch (e) {
+        console.warn(`[ANALYZE] Attempt ${attempt} failed: ${e.message}`);
+        if (attempt === 3) {
+          console.error("[ANALYZE] All 3 attempts returned malformed JSON");
+          return res.status(502).json({
+            success: false,
+            message: "Analysis failed due to malformed AI response. Please try again.",
+          });
+        }
       }
     }
 
-    // Save to unified history (replaces old Analysis model)
     const historyEntry = await History.create({
       user: req.user.id,
       toolType: "analyze",
@@ -164,14 +198,12 @@ router.post("/analyze", protect, checkToolLimit("dailyAnalyzeUsage", "code analy
       problemDescription,
     });
 
-    // Update user stats and per-tool usage counters
     const user = await User.findById(req.user.id);
     user.dailyUsage = (user.dailyUsage || 0) + 1;
     user.dailyAnalyzeUsage = (user.dailyAnalyzeUsage || 0) + 1;
     user.totalAnalyses += 1;
     user.lastActive = Date.now();
 
-    // Update topic stats (per-algorithm pattern)
     if (result.algorithm_pattern) {
       const current = user.topicStats.get(result.algorithm_pattern) || 0;
       user.topicStats.set(result.algorithm_pattern, current + 1);
@@ -186,11 +218,9 @@ router.post("/analyze", protect, checkToolLimit("dailyAnalyzeUsage", "code analy
 });
 
 // @route   POST /api/analysis/debug
-// Simple debugging helper that finds likely bugs with line numbers
-// Free plan: 10 debug runs/day (separate from analyze/explain limits)
 router.post("/debug", protect, checkToolLimit("dailyDebugUsage", "debug runs"), async (req, res) => {
   try {
-    const { userCode, language } = req.body;
+    const { userCode, language, problemTitle } = req.body;
     if (!userCode) {
       return res.status(400).json({ success: false, message: "Code is required" });
     }
@@ -244,7 +274,6 @@ Rules:
       parsed = parseAI(raw);
     }
 
-    // Ensure issues is always an array of objects with a numeric line
     const issues = Array.isArray(parsed.issues)
       ? parsed.issues
           .map((i) => ({
@@ -261,8 +290,17 @@ Rules:
       issues,
       fixed_code: parsed.fixed_code || "",
     };
-    
-    // Update user stats and per-tool usage counters
+
+    // Save to history so it shows in Recent Activity
+    await History.create({
+      user: req.user.id,
+      toolType: "debug",
+      codeInput: userCode,
+      language,
+      resultOutput: debugResult,
+      problemTitle: problemTitle || "Debug Session",
+    });
+
     try {
       const user = await User.findById(req.user.id);
       if (user) {
@@ -272,13 +310,10 @@ Rules:
         await user.save();
       }
     } catch {
-      // Non-fatal for the debugging response
+      // Non-fatal
     }
 
-    res.json({
-      success: true,
-      data: debugResult,
-    });
+    res.json({ success: true, data: debugResult });
   } catch (err) {
     console.error("Debug error:", err.message);
     res.status(500).json({ success: false, message: `Debugging failed: ${err.message}` });
@@ -345,8 +380,7 @@ router.get("/stats/overview", protect, async (req, res) => {
   try {
     const userId = req.user.id;
     const userObjectId = require("mongoose").Types.ObjectId.createFromHexString(userId);
-    
-    // Query from History collection where toolType is "analyze"
+
     const total = await History.countDocuments({ user: userId, toolType: "analyze" });
     const optimal = await History.countDocuments({ user: userId, toolType: "analyze", "resultOutput.is_optimal": true });
     const dsaSolved = await DsaStatus.countDocuments({ user: userId, solved: true });
@@ -377,10 +411,14 @@ router.get("/stats/overview", protect, async (req, res) => {
       { $sort: { count: -1 } },
     ]);
 
-    const recentActivity = await History.find({ user: userId, toolType: "analyze" })
+    // ── Recent activity: ALL tool types (analyze, debug, explain) ──
+    const recentActivity = await History.find({
+      user: userId,
+      toolType: { $in: ["analyze", "debug", "explain"] },
+    })
       .sort({ createdAt: -1 })
       .limit(7)
-      .select("createdAt resultOutput.is_optimal resultOutput.algorithm_pattern problemTitle");
+      .select("createdAt toolType resultOutput.is_optimal resultOutput.algorithm_pattern problemTitle language");
 
     res.json({
       success: true,

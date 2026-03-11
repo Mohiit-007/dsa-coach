@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Code2, TrendingUp, Target, Zap, ArrowRight,
-  Trophy, Play, Map, BarChart2, BookOpen, CheckCircle, XCircle,
+  Trophy, Play, Map, BarChart2, BookOpen, CheckCircle, XCircle, Bug, FileText,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -22,6 +22,34 @@ const QUICK_ACTIONS = [
   { to: "/history",        icon: Trophy,   label: "View History",    color: "text-rose-400",   bg: "bg-rose-400/10",   desc: "All past analyses"      },
 ];
 
+// Config for each tool type — icon, color, label
+const TOOL_CONFIG = {
+  analyze: {
+    label: "Analyze",
+    icon: Code2,
+    dotColor: "bg-cyan-400",
+    badgeBg: "bg-cyan-400/10",
+    badgeBorder: "border-cyan-400/20",
+    badgeText: "text-cyan-400",
+  },
+  debug: {
+    label: "Debug",
+    icon: Bug,
+    dotColor: "bg-red-400",
+    badgeBg: "bg-red-400/10",
+    badgeBorder: "border-red-400/20",
+    badgeText: "text-red-400",
+  },
+  explain: {
+    label: "Explain",
+    icon: FileText,
+    dotColor: "bg-blue-400",
+    badgeBg: "bg-blue-400/10",
+    badgeBorder: "border-blue-400/20",
+    badgeText: "text-blue-400",
+  },
+};
+
 const CustomBarTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -39,6 +67,7 @@ export default function Dashboard() {
   const [potd, setPotd] = useState(null);
   const [potdBusy, setPotdBusy] = useState(false);
   const { theme } = useTheme();
+
   const isLight = theme === "light";
 
   // Initial load + subscribe to shared analysisStats in AuthContext
@@ -59,9 +88,7 @@ export default function Dashboard() {
       }
     };
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [analysisStats, refreshAnalysisStats]);
 
   useEffect(() => {
@@ -84,23 +111,20 @@ export default function Dashboard() {
   };
 
   const firstName = user?.name?.split(" ")[0] || "there";
-  // Per-tool limits on the free plan
   const TOOL_LIMIT = 10;
   const analyzeUsed = user?.dailyAnalyzeUsage || 0;
   const explainUsed = user?.dailyExplainUsage || 0;
-  const debugUsed = user?.dailyDebugUsage || 0;
+  const debugUsed   = user?.dailyDebugUsage   || 0;
   const analyzeLeft = Math.max(0, TOOL_LIMIT - analyzeUsed);
   const explainLeft = Math.max(0, TOOL_LIMIT - explainUsed);
-  const debugLeft = Math.max(0, TOOL_LIMIT - debugUsed);
-  const hour      = new Date().getHours();
-  const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const debugLeft   = Math.max(0, TOOL_LIMIT - debugUsed);
+  const hour     = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const STAT_CARDS = [
-    // Prefer live user.totalAnalyses so it updates immediately after running Analyze
-    { label: "Total Analyses", value: user?.totalAnalyses ?? stats?.total ?? 0, icon: Code2, color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/20" },
-    { label: "Optimal Solutions", value: stats?.optimal ?? 0, icon: Target, color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20" },
-    { label: "Accuracy Rate", value: `${stats?.accuracy ?? 0}%`, icon: TrendingUp, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
-    // Prefer live user.problemsSolved so it updates immediately when practice status changes
+    { label: "Total Analyses",      value: user?.totalAnalyses ?? stats?.total ?? 0, icon: Code2,      color: "text-cyan-400",  bg: "bg-cyan-400/10",  border: "border-cyan-400/20"  },
+    { label: "Optimal Solutions",   value: stats?.optimal ?? 0,                      icon: Target,     color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20" },
+    { label: "Accuracy Rate",       value: `${stats?.accuracy ?? 0}%`,               icon: TrendingUp, color: "text-blue-400",  bg: "bg-blue-400/10",  border: "border-blue-400/20"  },
     { label: "DSA Problems Solved", value: user?.problemsSolved ?? stats?.dsaSolved ?? 0, icon: Trophy, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20" },
   ];
 
@@ -141,21 +165,15 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1 mb-3">
             <div className="glass rounded-lg px-3 py-2 border border-white/10">
               <div className="text-[10px] font-mono text-gray-500 mb-0.5">Analyze</div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-mono text-cyan-300 font-bold">{analyzeLeft}/10 left</span>
-              </div>
+              <span className="text-sm font-mono text-cyan-300 font-bold">{analyzeLeft}/10 left</span>
             </div>
             <div className="glass rounded-lg px-3 py-2 border border-white/10">
               <div className="text-[10px] font-mono text-gray-500 mb-0.5">Explain</div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-mono text-blue-300 font-bold">{explainLeft}/10 left</span>
-              </div>
+              <span className="text-sm font-mono text-blue-300 font-bold">{explainLeft}/10 left</span>
             </div>
             <div className="glass rounded-lg px-3 py-2 border border-white/10">
               <div className="text-[10px] font-mono text-gray-500 mb-0.5">Debug</div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-mono text-amber-300 font-bold">{debugLeft}/10 left</span>
-              </div>
+              <span className="text-sm font-mono text-amber-300 font-bold">{debugLeft}/10 left</span>
             </div>
           </div>
           <Link to="/pricing" className="inline-flex items-center text-xs text-cyan-400 font-semibold hover:text-cyan-300 transition-colors">
@@ -235,7 +253,7 @@ export default function Dashboard() {
               <PieChart>
                 <Pie
                   data={[
-                    { name: "Optimal",    value: stats.optimal   },
+                    { name: "Optimal",    value: stats.optimal    },
                     { name: "Suboptimal", value: stats.suboptimal },
                   ]}
                   cx="50%" cy="50%"
@@ -255,7 +273,7 @@ export default function Dashboard() {
       )}
 
       {/* ── Quick Actions ── */}
-          <div className="card mb-6">
+      <div className="card mb-6">
         <div className="section-header">
           <Zap size={14} className="text-cyan-400" />
           <span className="font-bold text-sm font-mono text-cyan-400 tracking-wider">QUICK ACTIONS</span>
@@ -288,16 +306,14 @@ export default function Dashboard() {
           <div className="p-4 sm:p-5 flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <div
-                  className={`font-bold truncate ${
-                    isLight ? "text-slate-900" : "text-white"
-                  }`}
-                >
+                <div className={`font-bold truncate ${isLight ? "text-slate-900" : "text-white"}`}>
                   {potd.title}
                 </div>
-                <span className={`badge border ${potd.difficulty === "Easy" ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400"
+                <span className={`badge border ${
+                  potd.difficulty === "Easy"   ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400"
                   : potd.difficulty === "Medium" ? "bg-amber-400/10 border-amber-400/20 text-amber-400"
-                  : "bg-red-400/10 border-red-400/20 text-red-400"}`}>
+                  : "bg-red-400/10 border-red-400/20 text-red-400"
+                }`}>
                   {potd.difficulty}
                 </span>
                 <span className="badge bg-white/5 border border-white/10 text-gray-500">
@@ -332,19 +348,14 @@ export default function Dashboard() {
                 </label>
               </div>
             </div>
-            <a
-              href={potd.link}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-primary text-sm py-2 px-4"
-            >
+            <a href={potd.link} target="_blank" rel="noreferrer" className="btn-primary text-sm py-2 px-4">
               Open Problem
             </a>
           </div>
         </div>
       )}
 
-      {/* ── Recent activity ── */}
+      {/* ── Recent Activity ── */}
       {!loading && stats?.recentActivity?.length > 0 && (
         <div className="card">
           <div className="section-header">
@@ -355,28 +366,53 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="divide-y divide-white/[0.04]">
-            {stats.recentActivity.map((a, i) => (
-              <div key={i} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 hover:bg-white/[0.02] transition-colors">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${a.result?.is_optimal ? "bg-green-400" : "bg-amber-400"}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{a.problemTitle}</div>
-                  <div className="text-xs text-gray-500 font-mono">{a.result?.algorithm_pattern || "—"}</div>
+            {stats.recentActivity.map((a, i) => {
+              const tool   = TOOL_CONFIG[a.toolType] || TOOL_CONFIG.analyze;
+              const ToolIcon = tool.icon;
+
+              return (
+                <div key={i} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 hover:bg-white/[0.02] transition-colors">
+
+                  {/* Colored dot */}
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${tool.dotColor}`} />
+
+                  {/* Title + subtitle */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm truncate">{a.problemTitle || "—"}</div>
+                    <div className="text-xs text-gray-500 font-mono">
+                      {a.toolType === "analyze"
+                        ? (a.resultOutput?.algorithm_pattern || "—")
+                        : a.language || "—"}
+                    </div>
+                  </div>
+
+                  {/* Tool type badge */}
+                  <span className={`badge text-[10px] border hidden sm:inline-flex items-center gap-1 ${tool.badgeBg} ${tool.badgeBorder} ${tool.badgeText}`}>
+                    <ToolIcon size={9} />
+                    {tool.label}
+                  </span>
+
+                  {/* Optimal / Suboptimal badge (only for analyze) */}
+                  {a.toolType === "analyze" && (
+                    <span className={`badge text-[10px] border hidden sm:inline-flex items-center gap-1 ${
+                      a.resultOutput?.is_optimal
+                        ? "bg-green-400/10 border-green-400/20 text-green-400"
+                        : "bg-amber-400/10 border-amber-400/20 text-amber-400"
+                    }`}>
+                      {a.resultOutput?.is_optimal
+                        ? <><CheckCircle size={9} className="mr-0.5" />Optimal</>
+                        : <><XCircle    size={9} className="mr-0.5" />Suboptimal</>
+                      }
+                    </span>
+                  )}
+
+                  {/* Date */}
+                  <div className="text-[11px] text-gray-600 font-mono flex-shrink-0">
+                    {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                  </div>
                 </div>
-                <div className={`badge text-[10px] border hidden sm:inline-flex ${
-                  a.result?.is_optimal
-                    ? "bg-green-400/10 border-green-400/20 text-green-400"
-                    : "bg-amber-400/10 border-amber-400/20 text-amber-400"
-                }`}>
-                  {a.result?.is_optimal
-                    ? <><CheckCircle size={9} className="mr-1" />Optimal</>
-                    : <><XCircle size={9} className="mr-1" />Suboptimal</>
-                  }
-                </div>
-                <div className="text-[11px] text-gray-600 font-mono flex-shrink-0">
-                  {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
