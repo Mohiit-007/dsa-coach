@@ -21,7 +21,7 @@ const NAV_GROUPS = [
     label: "Practice",
     items: [
       { to: "/practice",       icon: Target,   label: "DSA Practice",  badge: "New" },
-      { to: "/mock-interview", icon: Play,     label: "Mock Interview" },
+      { to: "/mock-interview", icon: Play,     label: "Mock Test" },
       { to: "/learning-path",  icon: Map,      label: "Learning Path"  },
       { to: "/learning-paths", icon: Calendar, label: "My Learning Paths" },
     ],

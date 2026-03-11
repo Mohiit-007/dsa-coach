@@ -15,7 +15,7 @@ import toast from "react-hot-toast";
 
 const QUICK_ACTIONS = [
   { to: "/analyzer",       icon: Code2,    label: "Analyze Code",    color: "text-cyan-400",   bg: "bg-cyan-400/10",   desc: "AI complexity analysis" },
-  { to: "/mock-interview", icon: Play,     label: "Mock Interview",  color: "text-green-400",  bg: "bg-green-400/10",  desc: "FAANG-style problems"   },
+  { to: "/mock-interview", icon: Play,     label: "Mock Test",       color: "text-green-400",  bg: "bg-green-400/10",  desc: "FAANG-style problems"   },
   { to: "/learning-path",  icon: Map,      label: "Learning Path",   color: "text-amber-400",  bg: "bg-amber-400/10",  desc: "Personalized roadmap"   },
   { to: "/topic-strength", icon: BarChart2,label: "Topic Strength",  color: "text-purple-400", bg: "bg-purple-400/10", desc: "See your weaknesses"    },
   { to: "/explainer",      icon: BookOpen, label: "Code Explainer",  color: "text-blue-400",   bg: "bg-blue-400/10",   desc: "Step-by-step breakdown" },
@@ -430,7 +430,7 @@ export default function Dashboard() {
               <Code2 size={15} /> Analyze Code Now
             </Link>
             <Link to="/mock-interview" className="btn-secondary inline-flex items-center justify-center gap-2">
-              <Play size={15} /> Try Mock Interview
+              <Play size={15} /> Try Mock Test
             </Link>
           </div>
         </div>
