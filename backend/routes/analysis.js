@@ -378,15 +378,14 @@ router.delete("/:id", protect, async (req, res) => {
 // @route   GET /api/analysis/stats/overview
 router.get("/stats/overview", protect, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userObjectId = require("mongoose").Types.ObjectId.createFromHexString(userId);
+    const userId = req.user._id; // Use _id which is already an ObjectId
 
     const total = await History.countDocuments({ user: userId, toolType: "analyze" });
     const optimal = await History.countDocuments({ user: userId, toolType: "analyze", "resultOutput.is_optimal": true });
     const dsaSolved = await DsaStatus.countDocuments({ user: userId, solved: true });
 
     const mcqAgg = await McqAttempt.aggregate([
-      { $match: { user: userObjectId } },
+      { $match: { user: userId } },
       {
         $group: {
           _id: null,
@@ -399,14 +398,14 @@ router.get("/stats/overview", protect, async (req, res) => {
     const mcqAccuracy = mcqAttempts ? Math.round(mcqAgg[0].avgAccuracy) : 0;
 
     const patternAgg = await History.aggregate([
-      { $match: { user: userObjectId, toolType: "analyze" } },
+      { $match: { user: userId, toolType: "analyze" } },
       { $group: { _id: "$resultOutput.algorithm_pattern", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 8 },
     ]);
 
     const langAgg = await History.aggregate([
-      { $match: { user: userObjectId, toolType: "analyze" } },
+      { $match: { user: userId, toolType: "analyze" } },
       { $group: { _id: "$language", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
