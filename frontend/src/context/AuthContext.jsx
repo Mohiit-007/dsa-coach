@@ -62,8 +62,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.clear();
     setUser(null);
     toast.success("Logged out successfully");
   }, []);

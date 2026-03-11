@@ -344,12 +344,15 @@ router.delete("/:id", protect, async (req, res) => {
 router.get("/stats/overview", protect, async (req, res) => {
   try {
     const userId = req.user.id;
-    const total = await Analysis.countDocuments({ user: userId });
-    const optimal = await Analysis.countDocuments({ user: userId, "result.is_optimal": true });
+    const userObjectId = require("mongoose").Types.ObjectId.createFromHexString(userId);
+    
+    // Query from History collection where toolType is "analyze"
+    const total = await History.countDocuments({ user: userId, toolType: "analyze" });
+    const optimal = await History.countDocuments({ user: userId, toolType: "analyze", "resultOutput.is_optimal": true });
     const dsaSolved = await DsaStatus.countDocuments({ user: userId, solved: true });
 
     const mcqAgg = await McqAttempt.aggregate([
-      { $match: { user: require("mongoose").Types.ObjectId.createFromHexString(userId) } },
+      { $match: { user: userObjectId } },
       {
         $group: {
           _id: null,
@@ -361,23 +364,23 @@ router.get("/stats/overview", protect, async (req, res) => {
     const mcqAttempts = mcqAgg[0]?.attempts || 0;
     const mcqAccuracy = mcqAttempts ? Math.round(mcqAgg[0].avgAccuracy) : 0;
 
-    const patternAgg = await Analysis.aggregate([
-      { $match: { user: require("mongoose").Types.ObjectId.createFromHexString(userId) } },
-      { $group: { _id: "$result.algorithm_pattern", count: { $sum: 1 } } },
+    const patternAgg = await History.aggregate([
+      { $match: { user: userObjectId, toolType: "analyze" } },
+      { $group: { _id: "$resultOutput.algorithm_pattern", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 8 },
     ]);
 
-    const langAgg = await Analysis.aggregate([
-      { $match: { user: require("mongoose").Types.ObjectId.createFromHexString(userId) } },
+    const langAgg = await History.aggregate([
+      { $match: { user: userObjectId, toolType: "analyze" } },
       { $group: { _id: "$language", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
 
-    const recentActivity = await Analysis.find({ user: userId })
+    const recentActivity = await History.find({ user: userId, toolType: "analyze" })
       .sort({ createdAt: -1 })
       .limit(7)
-      .select("createdAt result.is_optimal result.algorithm_pattern problemTitle");
+      .select("createdAt resultOutput.is_optimal resultOutput.algorithm_pattern problemTitle");
 
     res.json({
       success: true,
