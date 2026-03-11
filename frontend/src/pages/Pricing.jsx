@@ -13,7 +13,7 @@ const PLANS = [
     color: "border-white/10",
     headerBg: "bg-white/[0.03]",
     features: [
-      { text: "10 AI analyses per day", available: true },
+      { text: "Up to 30 AI actions/day (10 per tool)", available: true },
       { text: "Basic complexity analysis", available: true },
       { text: "3 hints per problem", available: true },
       { text: "Last 20 analyses history", available: true },
@@ -55,7 +55,7 @@ const PLANS = [
 ];
 
 const FAQ = [
-  { q: "When does the free limit reset?", a: "Every day at midnight IST. You get 10 fresh analyses every 24 hours." },
+  { q: "When does the free limit reset?", a: "Every day at midnight IST. You get 10 fresh runs per tool (Analyze, Explain, Debug) every 24 hours." },
   { q: "Can I cancel Pro anytime?", a: "Yes, you can cancel your Pro subscription at any time. No lock-in periods." },
   { q: "What payment methods are accepted?", a: "We accept all major cards, UPI, Net Banking via Razorpay/Stripe." },
   { q: "Is my code stored securely?", a: "Yes, all code and analyses are encrypted and stored securely in our database." },
@@ -100,7 +100,9 @@ export default function Pricing() {
               plan
             </div>
             <div className="text-xs text-gray-600 font-mono">
-              {user.plan === "free" ? `${Math.max(0, 10 - (user.dailyUsage || 0))} analyses remaining today` : "Unlimited analyses · All features unlocked"}
+              {user.plan === "free"
+                ? `${Math.max(0, 30 - (user.dailyUsage || 0))} AI actions remaining today`
+                : "Unlimited analyses · All features unlocked"}
             </div>
           </div>
           {user.plan === "pro" && <div className="ml-auto badge bg-cyan-400/15 border border-cyan-400/30 text-cyan-400">✨ Active</div>}

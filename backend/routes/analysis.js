@@ -5,7 +5,7 @@ const History = require("../models/History");
 const User = require("../models/User");
 const DsaStatus = require("../models/DsaStatus");
 const McqAttempt = require("../models/McqAttempt");
-const { protect, checkUsageLimit } = require("../middleware/auth");
+const { protect, checkToolLimit } = require("../middleware/auth");
 
 // Lazy init — reads .env after dotenv loads, won't crash on startup
 let _groq = null;
@@ -116,7 +116,8 @@ Return this exact JSON structure:
 }`;
 
 // @route   POST /api/analysis/analyze
-router.post("/analyze", protect, checkUsageLimit, async (req, res) => {
+// Free plan: 10 analyses/day (separate from explain/debug limits)
+router.post("/analyze", protect, checkToolLimit("dailyAnalyzeUsage", "code analyses"), async (req, res) => {
   try {
     const { problemTitle, problemDescription, userCode, language } = req.body;
 
@@ -163,13 +164,14 @@ router.post("/analyze", protect, checkUsageLimit, async (req, res) => {
       problemDescription,
     });
 
-    // Update user stats
+    // Update user stats and per-tool usage counters
     const user = await User.findById(req.user.id);
-    user.dailyUsage += 1;
+    user.dailyUsage = (user.dailyUsage || 0) + 1;
+    user.dailyAnalyzeUsage = (user.dailyAnalyzeUsage || 0) + 1;
     user.totalAnalyses += 1;
     user.lastActive = Date.now();
 
-    // Update topic stats
+    // Update topic stats (per-algorithm pattern)
     if (result.algorithm_pattern) {
       const current = user.topicStats.get(result.algorithm_pattern) || 0;
       user.topicStats.set(result.algorithm_pattern, current + 1);
@@ -185,7 +187,8 @@ router.post("/analyze", protect, checkUsageLimit, async (req, res) => {
 
 // @route   POST /api/analysis/debug
 // Simple debugging helper that finds likely bugs with line numbers
-router.post("/debug", protect, checkUsageLimit, async (req, res) => {
+// Free plan: 10 debug runs/day (separate from analyze/explain limits)
+router.post("/debug", protect, checkToolLimit("dailyDebugUsage", "debug runs"), async (req, res) => {
   try {
     const { userCode, language } = req.body;
     if (!userCode) {
@@ -258,6 +261,19 @@ Rules:
       issues,
       fixed_code: parsed.fixed_code || "",
     };
+    
+    // Update user stats and per-tool usage counters
+    try {
+      const user = await User.findById(req.user.id);
+      if (user) {
+        user.dailyUsage = (user.dailyUsage || 0) + 1;
+        user.dailyDebugUsage = (user.dailyDebugUsage || 0) + 1;
+        user.lastActive = Date.now();
+        await user.save();
+      }
+    } catch {
+      // Non-fatal for the debugging response
+    }
 
     res.json({
       success: true,

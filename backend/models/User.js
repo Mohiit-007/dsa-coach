@@ -10,7 +10,12 @@ const UserSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     plan: { type: String, enum: ["free", "pro"], default: "free" },
     preferredLanguage: { type: String, default: "C++" },
+    // Total AI actions used today across all code tools (analyze, explain, debug)
     dailyUsage: { type: Number, default: 0 },
+    // Per-tool daily usage counters (for separate 10/day limits per tool)
+    dailyAnalyzeUsage: { type: Number, default: 0 },
+    dailyExplainUsage: { type: Number, default: 0 },
+    dailyDebugUsage: { type: Number, default: 0 },
     usageReset: { type: Date, default: Date.now },
     totalAnalyses: { type: Number, default: 0 },
     problemsSolved: { type: Number, default: 0 },

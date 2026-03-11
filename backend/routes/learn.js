@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Groq = require("groq-sdk");
-const { protect } = require("../middleware/auth");
+const { protect, checkToolLimit } = require("../middleware/auth");
 const Analysis = require("../models/Analysis");
 const History = require("../models/History");
 const McqAttempt = require("../models/McqAttempt");
@@ -57,35 +57,82 @@ const parseAI = (raw) => {
 
 // ─── TOPIC STRENGTH ANALYSIS ─────────────────────────────────────
 // GET /api/learn/topic-strength
+// Uses unified History for all code tools (analyze, explain, debug)
 router.get("/topic-strength", protect, async (req, res) => {
   try {
-    const analyses = await Analysis.find({ user: req.user.id })
-      .select("result.algorithm_pattern result.is_optimal result.code_analysis.time_complexity language createdAt");
+    const historyEntries = await History.find({ user: req.user.id })
+      .select("toolType resultOutput createdAt")
+      .lean();
 
-    if (analyses.length === 0) {
-      return res.json({ success: true, data: { topics: [], summary: "No analyses yet. Start solving problems!" } });
+    if (!historyEntries.length) {
+      return res.json({
+        success: true,
+        data: { topics: [], strong: [], weak: [], total: 0 },
+      });
     }
 
     const patternMap = {};
-    analyses.forEach(a => {
-      const p = a.result?.algorithm_pattern;
-      if (!p) return;
-      if (!patternMap[p]) patternMap[p] = { total: 0, optimal: 0, recent: [] };
-      patternMap[p].total++;
-      if (a.result?.is_optimal) patternMap[p].optimal++;
-      patternMap[p].recent.push(a.createdAt);
+    let totalWithPattern = 0;
+
+    historyEntries.forEach((entry) => {
+      const toolType = entry.toolType;
+      const r = entry.resultOutput || {};
+
+      // Prefer the structured algorithm pattern when available
+      let pattern = null;
+      let isOptimal = null;
+
+      if (toolType === "analyze") {
+        pattern = r.algorithm_pattern || null;
+        isOptimal = typeof r.is_optimal === "boolean" ? r.is_optimal : null;
+      } else if (toolType === "explain") {
+        // Explanation responses expose algorithm_used and an is_optimal flag
+        pattern = r.algorithm_used || r.algorithm_pattern || null;
+        isOptimal = typeof r.is_optimal === "boolean" ? r.is_optimal : null;
+      } else if (toolType === "debug") {
+        // Debugger currently does not return an algorithm pattern — skip for topic stats
+        pattern = null;
+      }
+
+      if (!pattern) return;
+      totalWithPattern += 1;
+
+      if (!patternMap[pattern]) {
+        patternMap[pattern] = { total: 0, optimal: 0, recent: [] };
+      }
+      patternMap[pattern].total += 1;
+      if (isOptimal === true) {
+        patternMap[pattern].optimal += 1;
+      }
+      patternMap[pattern].recent.push(entry.createdAt);
     });
 
-    const topics = Object.entries(patternMap).map(([name, stats]) => {
-      const accuracy = Math.round((stats.optimal / stats.total) * 100);
-      const strength = accuracy >= 80 ? "strong" : accuracy >= 50 ? "moderate" : "weak";
-      return { name, total: stats.total, optimal: stats.optimal, accuracy, strength };
-    }).sort((a, b) => b.total - a.total);
+    if (!totalWithPattern) {
+      return res.json({
+        success: true,
+        data: { topics: [], strong: [], weak: [], total: 0 },
+      });
+    }
 
-    const strong = topics.filter(t => t.strength === "strong").map(t => t.name);
-    const weak = topics.filter(t => t.strength === "weak").map(t => t.name);
+    const topics = Object.entries(patternMap)
+      .map(([name, stats]) => {
+        const accuracy =
+          stats.total > 0
+            ? Math.round((stats.optimal / stats.total) * 100)
+            : 0;
+        const strength =
+          accuracy >= 80 ? "strong" : accuracy >= 50 ? "moderate" : "weak";
+        return { name, total: stats.total, optimal: stats.optimal, accuracy, strength };
+      })
+      .sort((a, b) => b.total - a.total);
 
-    res.json({ success: true, data: { topics, strong, weak, total: analyses.length } });
+    const strong = topics.filter((t) => t.strength === "strong").map((t) => t.name);
+    const weak = topics.filter((t) => t.strength === "weak").map((t) => t.name);
+
+    res.json({
+      success: true,
+      data: { topics, strong, weak, total: totalWithPattern },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -705,7 +752,8 @@ Rules:
 
 // ─── AI CODE EXPLANATION ────────────────────────────────────────
 // POST /api/learn/explain
-router.post("/explain", protect, async (req, res) => {
+// Free plan: 10 explanations/day (separate from analyze/debug limits)
+router.post("/explain", protect, checkToolLimit("dailyExplainUsage", "code explanations"), async (req, res) => {
   try {
     const { code, language } = req.body;
     if (!code) return res.status(400).json({ success: false, message: "Code required" });
@@ -767,6 +815,19 @@ Return ONLY valid JSON:
         2600
       );
       result = parseAI(raw);
+    }
+
+    // Update user stats and per-tool usage counters
+    try {
+      const user = await require("../models/User").findById(req.user.id);
+      if (user) {
+        user.dailyUsage = (user.dailyUsage || 0) + 1;
+        user.dailyExplainUsage = (user.dailyExplainUsage || 0) + 1;
+        user.lastActive = Date.now();
+        await user.save();
+      }
+    } catch {
+      // Non-fatal for explanation response
     }
 
     res.json({ success: true, data: result });

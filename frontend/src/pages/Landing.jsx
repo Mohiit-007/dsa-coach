@@ -1,21 +1,46 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Zap, Brain, TrendingUp, Code2, ArrowRight, CheckCircle, SunMedium, MoonStar } from "lucide-react";
+import { Zap, Brain, TrendingUp, Code2, ArrowRight, CheckCircle, SunMedium, MoonStar, ChevronDown } from "lucide-react";
 import { useTheme } from "../context/ThemeContext.jsx";
 
 const FEATURES = [
-  { icon: "🧠", title: "AI Code Analysis", desc: "Instant detection of algorithm patterns, time & space complexity with detailed explanations." },
-  { icon: "⚡", title: "Smart Optimization", desc: "AI suggests better algorithms and generates optimized code when your solution isn't efficient." },
-  { icon: "💡", title: "Progressive Hints", desc: "3-tier hint system guides you toward the solution without spoiling the learning experience." },
-  { icon: "📊", title: "Progress Tracking", desc: "Visual dashboard showing your strengths, weak topics, and coding patterns over time." },
-  { icon: "🎤", title: "Interview Prep", desc: "AI-generated follow-up questions mirroring real FAANG-style technical interviews." },
-  { icon: "🔗", title: "Related Problems", desc: "Smart recommendations for related problems to reinforce learned patterns and concepts." },
+  {
+    icon: "🧠",
+    title: "AI Code Tools",
+    desc: "Analyze, explain, and debug your DSA code in one place with beginner‑friendly guidance.",
+  },
+  {
+    icon: "📊",
+    title: "Topic Strength",
+    desc: "See which patterns you’re strong or weak at based on all your Analyze, Explain, and Debug runs.",
+  },
+  {
+    icon: "🗺️",
+    title: "Learning Paths",
+    desc: "Generate day‑by‑day DSA roadmaps tailored to your weak topics and available study time.",
+  },
+  {
+    icon: "📅",
+    title: "DSA Practice & POTD",
+    desc: "Solve curated DSA problems and a daily Problem of the Day to build a consistent habit.",
+  },
+  {
+    icon: "🎤",
+    title: "Mock Interviews & MCQs",
+    desc: "Simulated interviews and concept quizzes that mirror real FAANG‑style technical rounds.",
+  },
+  {
+    icon: "📁",
+    title: "History & Bookmarks",
+    desc: "Searchable history for every AI session with bookmarks so you never lose an important insight.",
+  },
 ];
 
 const STATS = [
-  { value: "50+", label: "Algorithm Patterns" },
-  { value: "10K+", label: "Problems Analyzed" },
-  { value: "98%", label: "Accuracy Rate" },
+  { value: "3", label: "AI Code Tools" },
   { value: "8", label: "Languages Supported" },
+  { value: "20+", label: "Patterns Tracked" },
+  { value: "30", label: "Free AI Runs / Day" },
 ];
 
 const PLANS = [
@@ -25,7 +50,12 @@ const PLANS = [
     period: "/month",
     color: "from-gray-500/10 to-gray-600/10",
     border: "border-white/10",
-    features: ["10 AI analyses/day", "Basic hints", "History (last 20)", "3 languages"],
+    features: [
+      "Up to 30 AI runs/day (10 per tool)",
+      "Analyze, Explain & Debug tools",
+      "Topic Strength & basic dashboard",
+      "History (last 20) sessions",
+    ],
     cta: "Get Started",
     ctaStyle: "btn-secondary w-full justify-center",
   },
@@ -36,7 +66,14 @@ const PLANS = [
     color: "from-cyan-500/10 to-blue-600/10",
     border: "border-cyan-500/30",
     badge: "Most Popular",
-    features: ["Unlimited analyses", "Advanced AI insights", "Full history", "All 8 languages", "Learning roadmap", "Priority support"],
+    features: [
+      "Unlimited AI runs across all tools",
+      "Advanced topic analytics & insights",
+      "Full history with bookmarks",
+      "All 8 languages unlocked",
+      "Learning path generator",
+      "Priority support",
+    ],
     cta: "Start Pro Trial",
     ctaStyle: "btn-primary w-full justify-center",
   },
@@ -45,6 +82,7 @@ const PLANS = [
 export default function Landing() {
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === "light";
+  const [openStep, setOpenStep] = useState("01");
 
   return (
     <div
@@ -116,7 +154,7 @@ export default function Landing() {
             isLight ? "text-slate-600" : "text-gray-400"
           }`}
         >
-          Analyze your code, detect patterns, get optimizations, and ace technical interviews — powered by Claude AI.
+          Analyze, explain, and debug your DSA code, discover weak topics, generate learning paths, and practice interviews — all in one AI‑powered coach.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link to="/register" className="btn-primary flex items-center gap-2 text-base px-8 py-4">
@@ -181,31 +219,80 @@ export default function Landing() {
           <div className="text-xs font-mono text-cyan-500 tracking-widest uppercase mb-3">How It Works</div>
           <h2 className="text-4xl font-black tracking-tight">Three steps to mastery</h2>
         </div>
-        <div className="space-y-5">
+        <div className="space-y-3">
           {[
-            { n: "01", title: "Paste your solution", desc: "Enter the problem and your code in any supported language.", icon: Code2 },
-            { n: "02", title: "AI analyzes instantly", desc: "Claude AI detects patterns, calculates complexity, and evaluates your approach.", icon: Brain },
-            { n: "03", title: "Learn and improve", desc: "Get hints, optimized code, and interview questions to reinforce the concept.", icon: TrendingUp },
-          ].map(step => (
-            <div
-              key={step.n}
-              className={`flex gap-6 glass rounded-2xl p-6 items-start ${
-                isLight ? "bg-white/80 border border-slate-200 shadow-sm" : ""
-              }`}
-            >
-              <div className="text-3xl font-black text-cyan-500/40 font-mono w-12 flex-shrink-0">{step.n}</div>
-              <div>
-                <div className="font-bold text-lg mb-1">{step.title}</div>
-                <div
-                  className={`font-mono text-sm ${
-                    isLight ? "text-slate-600" : "text-gray-400"
-                  }`}
-                >
-                  {step.desc}
+            {
+              n: "01",
+              title: "Paste your solution",
+              desc: "Open Code Tools and paste your DSA code in any supported language.",
+              icon: Code2,
+            },
+            {
+              n: "02",
+              title: "Pick the right tool",
+              desc: "Use Analyze to check optimality, Explain to understand code, or Debug to fix bugs instantly.",
+              icon: Brain,
+            },
+            {
+              n: "03",
+              title: "Master topics with Topic Strength",
+              desc: "Review your Topic Strength dashboard to see which patterns you solve well and where you struggle.",
+              icon: TrendingUp,
+            },
+            {
+              n: "04",
+              title: "Follow your Learning Path",
+              desc: "Generate a personalized DSA learning path from your weak topics and follow the day‑by‑day plan.",
+              icon: TrendingUp,
+            },
+          ].map(step => {
+            const isOpen = openStep === step.n;
+            return (
+              <button
+                key={step.n}
+                type="button"
+                onClick={() => setOpenStep(prev => (prev === step.n ? "" : step.n))}
+                className={`w-full text-left rounded-2xl px-5 py-4 transition-all border ${
+                  isLight
+                    ? "bg-white/90 border-slate-200 hover:border-cyan-300 hover:shadow-md"
+                    : "bg-dark-800/80 border-white/10 hover:border-cyan-400/40"
+                } ${isOpen ? "shadow-lg ring-1 ring-cyan-400/70" : "shadow-sm"}`}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-2xl sm:text-3xl font-black text-cyan-500/60 font-mono w-10 sm:w-12 flex-shrink-0">
+                      {step.n}
+                    </div>
+                    <div>
+                      <div className="font-bold text-base sm:text-lg">{step.title}</div>
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-1 text-xs font-mono ${
+                    isLight ? "text-slate-500" : "text-gray-400"
+                  }`}>
+                    <span>{isOpen ? "Hide" : "Show"}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-200 ${
+                        isOpen ? "rotate-180 text-cyan-400" : ""
+                      }`}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+                {isOpen && (
+                  <div className="overflow-hidden">
+                    <p
+                      className={`mt-3 font-mono text-sm leading-relaxed ${
+                        isLight ? "text-slate-600" : "text-gray-300"
+                      }`}
+                    >
+                      {step.desc}
+                    </p>
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       </section>
 

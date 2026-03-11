@@ -108,7 +108,7 @@ function LangPicker({ value, onChange }) {
 }
 
 export default function CodeDebugger() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -322,6 +322,15 @@ export default function CodeDebugger() {
       
       console.log(`[DEBUG] Debug result received:`, debugResult ? "success" : "failed");
       setResult(debugResult);
+
+      // Update local user usage counters (keep in sync with backend)
+      if (user && updateUser) {
+        updateUser({
+          ...user,
+          dailyUsage: (user.dailyUsage || 0) + 1,
+          dailyDebugUsage: (user.dailyDebugUsage || 0) + 1,
+        });
+      }
       
       // Save to unified history
       try {
@@ -347,7 +356,12 @@ export default function CodeDebugger() {
     } catch (err) {
       console.error("[DEBUG] Debug error:", err);
       console.error("[DEBUG] Error response:", err.response?.data);
-      toast.error(err.response?.data?.message || "Debugging failed");
+      const msg = err.response?.data?.message || "Debugging failed";
+      if (err.response?.data?.limitReached) {
+        toast.error("Daily limit reached for Code Debug. Upgrade to Pro for unlimited debugging.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }

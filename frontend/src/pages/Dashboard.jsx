@@ -68,7 +68,14 @@ export default function Dashboard() {
   };
 
   const firstName = user?.name?.split(" ")[0] || "there";
-  const freeLeft  = Math.max(0, 10 - (user?.dailyUsage || 0));
+  // Per-tool limits on the free plan
+  const TOOL_LIMIT = 10;
+  const analyzeUsed = user?.dailyAnalyzeUsage || 0;
+  const explainUsed = user?.dailyExplainUsage || 0;
+  const debugUsed = user?.dailyDebugUsage || 0;
+  const analyzeLeft = Math.max(0, TOOL_LIMIT - analyzeUsed);
+  const explainLeft = Math.max(0, TOOL_LIMIT - explainUsed);
+  const debugLeft = Math.max(0, TOOL_LIMIT - debugUsed);
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -99,36 +106,43 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* ── Free-plan usage bar ── */}
+      {/* ── Free-plan per-tool usage ── */}
       {user?.plan === "free" && (
         <div className="card p-4 sm:p-5 mb-6 bg-gradient-to-r from-cyan-500/5 to-blue-600/5 border-cyan-500/20">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
-              <div className="font-semibold text-sm">Daily AI Usage</div>
+              <div className="font-semibold text-sm">Daily AI Usage (Free)</div>
               <div className="text-xs text-gray-500 font-mono mt-0.5">
-                {user?.dailyUsage || 0} / 10 analyses used today
+                10 runs per tool: Analyze, Explain, Debug
               </div>
             </div>
             <span className="badge bg-amber-400/10 border border-amber-400/20 text-amber-400">
               Free Plan
             </span>
           </div>
-          <div
-            className={`w-full rounded-full h-2 mb-2 ${
-              isLight ? "bg-slate-200" : "bg-white/[0.06]"
-            }`}
-          >
-            <div
-              className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${((user?.dailyUsage || 0) / 10) * 100}%` }}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1 mb-3">
+            <div className="glass rounded-lg px-3 py-2 border border-white/10">
+              <div className="text-[10px] font-mono text-gray-500 mb-0.5">Analyze</div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-mono text-cyan-300 font-bold">{analyzeLeft}/10 left</span>
+              </div>
+            </div>
+            <div className="glass rounded-lg px-3 py-2 border border-white/10">
+              <div className="text-[10px] font-mono text-gray-500 mb-0.5">Explain</div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-mono text-blue-300 font-bold">{explainLeft}/10 left</span>
+              </div>
+            </div>
+            <div className="glass rounded-lg px-3 py-2 border border-white/10">
+              <div className="text-[10px] font-mono text-gray-500 mb-0.5">Debug</div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-mono text-amber-300 font-bold">{debugLeft}/10 left</span>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-600 font-mono">{freeLeft} remaining today</span>
-            <Link to="/pricing" className="text-xs text-cyan-400 font-semibold hover:text-cyan-300 transition-colors">
-              Upgrade to Pro →
-            </Link>
-          </div>
+          <Link to="/pricing" className="inline-flex items-center text-xs text-cyan-400 font-semibold hover:text-cyan-300 transition-colors">
+            Upgrade to Pro →
+          </Link>
         </div>
       )}
 

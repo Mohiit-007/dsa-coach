@@ -12,9 +12,11 @@ export default function Login() {
 
   const validate = () => {
     const e = {};
-    if (!form.email) e.email = "Email required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email";
-    if (!form.password) e.password = "Password required";
+    if (!form.email.trim()) e.email = "Please enter your email address";
+    else if (!/\S+@\S+\.\S+/.test(form.email.trim())) e.email = "Please enter a valid email address";
+
+    if (!form.password) e.password = "Please enter your password";
+    else if (form.password.length < 6) e.password = "Password must be at least 6 characters";
     return e;
   };
 
@@ -23,11 +25,21 @@ export default function Login() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    const result = await login(form.email, form.password);
+    const result = await login(form.email.trim(), form.password);
     if (result.success) {
       navigate("/dashboard");
+    } else if (result?.message) {
+      // Prefer field‑specific errors when possible, otherwise show a general banner
+      const msg = result.message;
+      if (/email/i.test(msg)) {
+        setErrors(prev => ({ ...prev, email: msg }));
+      } else if (/password/i.test(msg)) {
+        setErrors(prev => ({ ...prev, password: msg }));
+      } else {
+        setErrors(prev => ({ ...prev, general: msg || "Incorrect email or password" }));
+      }
     } else {
-      setErrors({ password: result.message || "Incorrect email or password" });
+      setErrors(prev => ({ ...prev, general: "Unable to sign in. Please try again." }));
     }
   };
 
@@ -35,7 +47,7 @@ export default function Login() {
     <div className="min-h-screen bg-dark-900 grid-bg flex items-center justify-center px-4">
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(34,211,238,0.07) 0%, transparent 60%)" }} />
 
-      <div className="relative w-full max-w-md animate-fade-up">
+        <div className="relative w-full max-w-md animate-fade-up">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
@@ -48,6 +60,11 @@ export default function Login() {
 
         <div className="card p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {errors.general && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300 font-mono mb-1">
+                {errors.general}
+              </div>
+            )}
             {/* Email */}
             <div>
               <label className="block text-xs font-semibold text-gray-400 font-mono tracking-wider uppercase mb-2">Email</label>
@@ -57,8 +74,11 @@ export default function Login() {
                   type="email"
                   value={form.email}
                   onChange={e => {
-                    setForm(f => ({ ...f, email: e.target.value }));
-                    if (errors.email) setErrors(err => ({ ...err, email: "" }));
+                    const value = e.target.value;
+                    setForm(f => ({ ...f, email: value }));
+                    if (errors.email || errors.general) {
+                      setErrors(err => ({ ...err, email: "", general: "" }));
+                    }
                   }}
                   placeholder="you@example.com"
                   className={`input-field pl-11 ${errors.email ? "border-red-400/50 focus:border-red-400/50" : ""}`}
@@ -81,8 +101,11 @@ export default function Login() {
                   type={show ? "text" : "password"}
                   value={form.password}
                   onChange={e => {
-                    setForm(f => ({ ...f, password: e.target.value }));
-                    if (errors.password) setErrors(err => ({ ...err, password: "" }));
+                    const value = e.target.value;
+                    setForm(f => ({ ...f, password: value }));
+                    if (errors.password || errors.general) {
+                      setErrors(err => ({ ...err, password: "", general: "" }));
+                    }
                   }}
                   placeholder="••••••••"
                   className={`input-field pl-11 pr-11 ${errors.password ? "border-red-400/50 focus:border-red-400/50 focus:ring-red-400/20" : ""}`}

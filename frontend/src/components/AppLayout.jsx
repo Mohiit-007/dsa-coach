@@ -55,7 +55,14 @@ export default function AppLayout() {
 
   const handleLogout = () => { logout(); navigate("/"); };
   const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
-  const freeLeft = Math.max(0, 10 - (user?.dailyUsage || 0));
+  // Per-tool limits on the free plan
+  const TOOL_LIMIT = 10;
+  const analyzeUsed = user?.dailyAnalyzeUsage || 0;
+  const explainUsed = user?.dailyExplainUsage || 0;
+  const debugUsed = user?.dailyDebugUsage || 0;
+  const analyzeLeft = Math.max(0, TOOL_LIMIT - analyzeUsed);
+  const explainLeft = Math.max(0, TOOL_LIMIT - explainUsed);
+  const debugLeft = Math.max(0, TOOL_LIMIT - debugUsed);
 
   return (
     <div className="flex h-screen bg-dark-900 overflow-hidden">
@@ -173,14 +180,21 @@ export default function AppLayout() {
             {user?.plan === "free" ? (
               <div className="glass rounded-xl p-3 border border-white/[0.06]">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] text-gray-500 font-mono">Daily usage</span>
-                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{freeLeft}/10 left</span>
+                  <span className="text-[10px] text-gray-500 font-mono">Code tools</span>
                 </div>
-                <div className="w-full bg-white/[0.06] rounded-full h-1 mb-2.5">
-                  <div
-                    className="bg-gradient-to-r from-cyan-400 to-blue-500 h-1 rounded-full transition-all duration-500"
-                    style={{ width: `${((10 - freeLeft) / 10) * 100}%` }}
-                  />
+                <div className="space-y-1.5 mb-2.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                    <span>Analyze</span>
+                    <span className="text-cyan-400 font-semibold">{analyzeLeft}/10 left</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                    <span>Explain</span>
+                    <span className="text-blue-400 font-semibold">{explainLeft}/10 left</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                    <span>Debug</span>
+                    <span className="text-amber-400 font-semibold">{debugLeft}/10 left</span>
+                  </div>
                 </div>
                 <NavLink
                   to="/pricing"

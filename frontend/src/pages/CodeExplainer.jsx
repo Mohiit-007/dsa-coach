@@ -99,7 +99,7 @@ function LangPicker({ value, onChange }) {
 }
 
 export default function CodeExplainer() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -266,6 +266,15 @@ export default function CodeExplainer() {
       
       console.log(`[EXPLAIN] Explanation received:`, explanationResult ? "success" : "failed");
       setResult(explanationResult);
+
+      // Update local user usage counters (keep in sync with backend)
+      if (user && updateUser) {
+        updateUser({
+          ...user,
+          dailyUsage: (user.dailyUsage || 0) + 1,
+          dailyExplainUsage: (user.dailyExplainUsage || 0) + 1,
+        });
+      }
       
       // Save to unified history
       try {
@@ -286,7 +295,12 @@ export default function CodeExplainer() {
     } catch (err) {
       console.error("[EXPLAIN] Explanation error:", err);
       console.error("[EXPLAIN] Error response:", err.response?.data);
-      toast.error(err.response?.data?.message || "Explanation failed");
+      const msg = err.response?.data?.message || "Explanation failed";
+      if (err.response?.data?.limitReached) {
+        toast.error("Daily limit reached for Code Explain. Upgrade to Pro for unlimited explanations.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }

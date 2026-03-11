@@ -18,7 +18,11 @@ const sendTokenResponse = (user, statusCode, res) => {
       totalAnalyses: user.totalAnalyses,
       problemsSolved: user.problemsSolved,
       streak: user.streak,
+      // Total and per-tool daily usage counters (reset daily on backend)
       dailyUsage: user.dailyUsage,
+      dailyAnalyzeUsage: user.dailyAnalyzeUsage,
+      dailyExplainUsage: user.dailyExplainUsage,
+      dailyDebugUsage: user.dailyDebugUsage,
       bio: user.bio,
       github: user.github,
       linkedin: user.linkedin,

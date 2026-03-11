@@ -397,7 +397,15 @@ export default function Analyzer() {
       
       console.log(`[ANALYZE] Analysis received:`, historyEntry ? "success" : "failed");
       setResult(historyEntry ? { ...historyEntry, result: historyEntry.resultOutput } : null);
-      updateUser({ ...user, dailyUsage: (user.dailyUsage || 0) + 1 });
+
+      // Update local user usage counters (keep in sync with backend)
+      if (user && updateUser) {
+        updateUser({
+          ...user,
+          dailyUsage: (user.dailyUsage || 0) + 1,
+          dailyAnalyzeUsage: (user.dailyAnalyzeUsage || 0) + 1,
+        });
+      }
       
       // Save to unified history
       try {
