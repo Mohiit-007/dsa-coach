@@ -120,6 +120,7 @@ export default function CodeDebugger() {
   const [loading, setLoading] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedFixed, setCopiedFixed] = useState(false); 
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
@@ -612,8 +613,33 @@ export default function CodeDebugger() {
                 {/* Fixed code */}
                 {result.fixed_code && (
                   <div className="card p-4 sm:p-5">
-                    <div className="text-xs font-bold font-mono text-cyan-400 tracking-wider mb-2">
-                      SUGGESTED FIXED CODE
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-bold font-mono text-cyan-400 tracking-wider">
+                        SUGGESTED FIXED CODE
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(result.fixed_code);
+                            setCopiedFixed(true);
+                            setTimeout(() => setCopiedFixed(false), 2000);
+                            toast.success("Fixed code copied!");
+                          } catch {
+                            toast.error("Failed to copy");
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono transition-all border ${
+                          isLight
+                            ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100 border-gray-300"
+                            : "text-gray-400 hover:text-white hover:bg-white/[0.05] border-white/10"
+                        }`}
+                      >
+                        {copiedFixed ? (
+                          <><Check size={11} className="text-green-500" /> Copied</>
+                        ) : (
+                          <><Copy size={11} /> Copy</>
+                        )}
+                      </button>
                     </div>
                     <pre
                       className={`text-xs sm:text-sm font-mono whitespace-pre overflow-x-auto rounded-xl border px-3 py-3 ${

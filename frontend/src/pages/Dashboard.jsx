@@ -385,9 +385,9 @@ export default function Dashboard() {
       {!loading && (!stats || stats.total === 0) && (
         <div className="card p-10 sm:p-16 text-center">
           <div className="text-5xl sm:text-6xl mb-4 sm:mb-5">🚀</div>
-          <h3 className="text-xl sm:text-2xl font-black mb-3">Start Your First Analysis</h3>
+          <h3 className="text-xl sm:text-2xl font-black mb-3">AI-Powered Code Analysis</h3>
           <p className="text-gray-500 font-mono text-sm mb-6 sm:mb-8 max-w-sm mx-auto leading-relaxed">
-            Paste any LeetCode solution to get instant AI feedback on patterns, complexity, hints, and optimizations.
+            Paste your Code solution and get instant insights on complexity, patterns, and optimal improvements.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/analyzer" className="btn-primary inline-flex items-center justify-center gap-2">
