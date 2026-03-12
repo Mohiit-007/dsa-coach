@@ -66,6 +66,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [potd, setPotd] = useState(null);
   const [potdBusy, setPotdBusy] = useState(false);
+  const [solvedDsa, setSolvedDsa] = useState([]);
   const { theme } = useTheme();
 
   const isLight = theme === "light";
@@ -95,6 +96,18 @@ export default function Dashboard() {
     api.get("/dsa/potd")
       .then(res => setPotd(res.data.data))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    api.get("/dsa/solved?limit=50")
+      .then((res) => {
+        if (res.data?.success) {
+          setSolvedDsa(res.data.data || []);
+        }
+      })
+      .catch(() => {
+        // Non-blocking: dashboard can work without this
+      });
   }, []);
 
   const updatePotdStatus = async (patch) => {
@@ -198,6 +211,57 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* ── Solved DSA problems list ── */}
+      {solvedDsa.length > 0 && (
+        <div className="card p-4 sm:p-5 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <Trophy size={14} className="text-amber-400" />
+              <span className="font-bold text-sm font-mono text-amber-400 tracking-wider">
+                DSA PROBLEMS SOLVED
+              </span>
+            </div>
+            <div className="text-[11px] text-gray-500 font-mono">
+              Showing {solvedDsa.length} most recent
+            </div>
+          </div>
+          <div className="max-h-64 overflow-auto divide-y divide-white/[0.04]">
+            {solvedDsa.map((p) => (
+              <button
+                key={p._id}
+                type="button"
+                onClick={() => window.open(p.link, "_blank", "noopener,noreferrer")}
+                className="w-full text-left px-3 sm:px-4 py-2.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm truncate">
+                      {p.title}
+                    </span>
+                    <span
+                      className={`badge border text-[10px] ${
+                        p.difficulty === "Easy"
+                          ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400"
+                          : p.difficulty === "Medium"
+                            ? "bg-amber-400/10 border-amber-400/20 text-amber-400"
+                            : "bg-red-400/10 border-red-400/20 text-red-400"
+                      }`}
+                    >
+                      {p.difficulty}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-gray-500 font-mono mt-0.5 truncate">
+                    {p.topic}
+                    {p.tags?.length ? ` • ${p.tags.slice(0, 3).join(" • ")}` : ""}
+                  </div>
+                </div>
+                <ArrowRight size={14} className="text-gray-600 flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── MCQ performance ── */}
       {!loading && stats?.mcqAttempts > 0 && (

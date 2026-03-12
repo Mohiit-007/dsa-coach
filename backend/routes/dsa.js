@@ -242,5 +242,65 @@ router.get("/potd", protect, async (req, res) => {
   }
 });
 
+// GET /api/dsa/solved?limit=50
+// Returns the list of problems that the current user has marked as solved,
+// so the dashboard/practice pages can display exactly which questions were solved.
+router.get("/solved", protect, async (req, res) => {
+  try {
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit, 10) || 50)
+    );
+
+    const solvedStatuses = await DsaStatus.find({
+      user: req.user.id,
+      solved: true,
+    })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .select("problem solved revision updatedAt")
+      .lean();
+
+    if (!solvedStatuses.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const problemIds = solvedStatuses.map((s) => s.problem);
+    const problems = await DsaProblem.find({ _id: { $in: problemIds } })
+      .select("title difficulty topic tags link gfg_link source")
+      .lean();
+
+    const problemMap = new Map(
+      problems.map((p) => [String(p._id), p])
+    );
+
+    const data = solvedStatuses
+      .map((s) => {
+        const p = problemMap.get(String(s.problem));
+        if (!p) return null;
+        return {
+          _id: p._id,
+          title: p.title,
+          difficulty: p.difficulty,
+          topic: p.topic,
+          tags: p.tags,
+          link: p.link,
+          gfg_link: p.gfg_link,
+          source: p.source,
+          status: {
+            solved: true,
+            revision: !!s.revision,
+            lastUpdated: s.updatedAt,
+          },
+        };
+      })
+      .filter(Boolean);
+
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;
 
