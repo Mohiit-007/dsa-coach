@@ -1,4 +1,4 @@
-# ⚡ DSA AI Coach — Full MERN SaaS
+# ⚡ DSA-coach — Full MERN SaaS
 
 > AI-powered DSA coach with Striver A2Z integration, code analyzer, MCQ practice, and smart progress tracking.
 
@@ -7,7 +7,7 @@
 ## 📦 Project Structure
 
 ```bash
-leetcode-ai-coach/
+dsa-coach/
 ├── backend/
 │   ├── config/db.js              # MongoDB connection
 │   ├── middleware/auth.js        # JWT auth + usage limit
@@ -60,7 +60,7 @@ leetcode-ai-coach/
   - Per‑topic accordion UI with Easy → Medium → Hard sorting and solved / total counts.
   - LeetCode + GFG **search links** for each problem (no homepage redirects).
   - Daily Problem of the Day, ring progress, and per‑topic progress bars.
-  - Per‑user **DSA streak** and **DSA Problems Solved** surfaced on Dashboard + Profile.
+  - Per‑user **DSA streak**, **DSA Problems Solved**, and a **list of recently solved DSA questions** surfaced on Dashboard + Profile (persists across logout / login).
 
 - **Code Analyzer**
   - Paste a problem title + code; backend (Groq Llama‑3.3) returns:
@@ -182,11 +182,12 @@ FREE_DAILY_LIMIT=10          # daily AI analysis limit for free users
 
 ### DSA Practice (Striver A2Z)
 
-| Method | Endpoint                           | Description                             |
-|--------|------------------------------------|-----------------------------------------|
-| GET    | `/api/dsa/all`                     | All Striver problems + user status      |
-| GET    | `/api/dsa/potd`                    | Problem of the Day                      |
-| PUT    | `/api/dsa/problems/:id/status`     | Toggle solved / revision flags          |
+| Method | Endpoint                           | Description                                  |
+|--------|------------------------------------|----------------------------------------------|
+| GET    | `/api/dsa/all`                     | All Striver problems + user status           |
+| GET    | `/api/dsa/potd`                    | Problem of the Day                           |
+| GET    | `/api/dsa/solved`                  | Recently solved problems for current user    |
+| PUT    | `/api/dsa/problems/:id/status`     | Toggle solved / revision flags               |
 
 ---
 
@@ -203,7 +204,7 @@ FREE_DAILY_LIMIT=10          # daily AI analysis limit for free users
 1. **Backend**
    - Set `MONGO_URI`, `JWT_SECRET`, `GROQ_API_KEY`, `CLIENT_URL` on your host (Render / Railway / etc.).
    - Start command: `node server.js`.
-   - Confirm health: `GET /api/health` → `"DSA AI Coach API is running 🚀"`.
+   - Confirm health: `GET /api/health` → `"DSA-coach API is running 🚀"`.
 
 2. **Frontend**
    - In `frontend`:
@@ -221,7 +222,7 @@ At this point the app is ready to push to GitHub or deploy.
 
 ## 👤 Author
 
-**Mohit Sahu** — DSA AI Coach  
+**Mohit Sahu** — DSA-coach  
 Built with MERN + Groq ⚡
 
 # ⚡ DSA Coach — Full MERN SaaS

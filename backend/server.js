@@ -30,7 +30,7 @@ app.use("/api/dsa",      require("./routes/dsa"));
 app.use("/api/history",  require("./routes/history"));
 
 app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "DSA AI Coach API is running 🚀" });
+  res.json({ success: true, message: "DSA-coach API is running 🚀" });
 });
 
 app.use("*", (req, res) => {

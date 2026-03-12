@@ -377,7 +377,7 @@ export default function Landing() {
           isLight ? "border-t border-slate-200 text-slate-500 bg-white/80" : "border-t border-white/[0.06] text-gray-600"
         }`}
       >
-        <p>© 2024 DSA AI Coach · Built by Mohit Sahu · Powered by Claude AI</p>
+        <p>© 2024 DSA-coach · Built by Mohit Sahu · Powered by Claude AI</p>
       </footer>
     </div>
   );
