@@ -214,13 +214,7 @@ export default function History() {
       </div>
 
       {/* Filters */}
-      <div
-        className={`mb-6 rounded-3xl shadow-sm border ${
-          theme === "light"
-            ? "border-slate-200 bg-white"
-            : "border-white/10 bg-dark-900/60"
-        }`}
-      >
+      <div className="card mb-6">
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Tool Type Filter */}
@@ -245,10 +239,10 @@ export default function History() {
                         active
                           ? theme === "light"
                             ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                            : "bg-cyan-500/20 text-cyan-200 border-cyan-400/60 shadow-sm"
+                            : "bg-dark-800/80 text-cyan-200 border-cyan-400/60 shadow-sm"
                           : theme === "light"
                             ? "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                            : "bg-dark-800/80 text-gray-300 border-white/10 hover:bg-dark-700 hover:text-white"
+                            : "bg-dark-900/60 text-gray-300 border-white/10 hover:bg-dark-800 hover:text-white"
                       }`}
                     >
                       <Icon size={14} />
