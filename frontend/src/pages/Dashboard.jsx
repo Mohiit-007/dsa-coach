@@ -152,7 +152,7 @@ export default function Dashboard() {
           </h1>
           <p className="text-gray-500 font-mono text-xs sm:text-sm">
             {stats?.total
-              ? `You've analyzed ${stats.total} problems • ${stats.accuracy}% optimal rate`
+              ? `You've completed ${stats.total} AI sessions • ${stats.accuracy}% optimal rate`
               : "Start by analyzing your first problem below"}
           </p>
         </div>
