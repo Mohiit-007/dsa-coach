@@ -10,6 +10,9 @@ const app = express();
 
 connectDB();
 
+// Render/most PaaS run behind a proxy (needed for correct IP + rate limiting)
+app.set("trust proxy", 1);
+
 app.use(helmet());
 // Allow one or more origins (comma-separated) for CORS
 const allowedOrigins = process.env.CLIENT_URL
