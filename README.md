@@ -224,7 +224,3 @@ At this point the app is ready to push to GitHub or deploy.
 
 **Mohit Sahu** — DSA-coach  
 Built with MERN + Groq ⚡
-
-# ⚡ DSA Coach — Full MERN SaaS
-
-> AI-powered platform for DSA interview preparation — built with MERN + Groq AI
